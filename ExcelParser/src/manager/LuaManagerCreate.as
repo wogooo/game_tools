@@ -59,13 +59,13 @@ package manager
 		{
 			var str:String ="-- created By yefeng Tool  "+NextLine+NextLine;
 			
-			str +="local "+className + ' = require "game/config/model/'+className+'"' +NextLine+NextLine;
+			str +="local "+className + ' = require "game.config.model.'+className+'"' +NextLine+NextLine;
 			
 			str += upperClassname+"Class = class()"+NextLine+NextLine;
 			
 			str += "function "+upperClassname+"Class:ctor()"+NextLine;
 			str += Tab+"self._dict = {}"+NextLine;
-			str += Tab+ "self:cacheData()"+NextLine;
+			str += Tab+ "self:init()"+NextLine;
 			str += "end"+NextLine+NextLine;
 			str += "function "+upperClassname+"Class:cacheData()"+NextLine;
 			str += Tab+"for key, value in pairs("+className+") do"+NextLine;

@@ -102,10 +102,8 @@ package manager
 			saveFile(clientStr,dir,fileName+".lua");
 			
 			saveFile(serverStr,dir,fileName+".json");
-			if (clientArr.length>0)
-			{
-				LuaManagerCreate.createLuaManager(fileName,clientArr[0].des,clientArr[0].values,dir);
-			}
+			
+			LuaManagerCreate.createLuaManager(fileName,serverArr[0].des,serverArr[0].values,dir);
 			if (serverArr.length >0&&createjava)
 			{
 				JavaFileCreate.createJavaVoFile(fileName,serverArr[0].des,serverArr[0].values,dir);
@@ -163,16 +161,7 @@ package manager
 
 				if (index==-1)  //不是数组
 				{
-//					str='["'+key+'"] = "'+ value + '" , '
-						
-					if(value.charCodeAt(0)>=48 && value.charCodeAt(0)<=57) /// int 
-					{
-						str='["'+key+'"] = '+ value + ' , '
-					}
-					else
-					{
-						str='["'+key+'"] = "'+ value + '" , '
-					}
+					str='["'+key+'"] = "'+ value + '" , '
 				}
 				else //是数组
 				{

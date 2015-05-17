@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009"
+					   xmlns:s="library://ns.adobe.com/flex/spark"
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   width="248" height="151" initialize="init(event)">
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.YFFramework.core.net.loader.image_swf.BytesLoader;
+			
+			import manager.BitmapDataManager;
+			
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			import mx.graphics.codec.JPEGEncoder;
+			
+
+			protected function init(event:FlexEvent):void
+			{
+				this.addEventListener(NativeDragEvent.NATIVE_DRAG_ENTER, dragFileHandler);
+				this.addEventListener(NativeDragEvent.NATIVE_DRAG_DROP, dragFileHandler);
+			}
+			private function dragFileHandler(event:NativeDragEvent):void {
+					var fileArr:Array = event.clipboard.getData(ClipboardFormats.FILE_LIST_FORMAT) as Array;
+					var file:File=fileArr[0];
+					switch(event.type)
+					{
+						case NativeDragEvent.NATIVE_DRAG_ENTER:
+							if(file.type==".png"||file.isDirectory)
+							{
+								NativeDragManager.acceptDragDrop(this);
+							}
+							break;
+						case NativeDragEvent.NATIVE_DRAG_DROP:
+							if(file.type==".png")
+							{
+								readFile(file);
+								Alert.show('创建完成');
+							}
+							else if(file.isDirectory)
+							{
+								readDir(file,true);
+							}
+							break;
+
+					}
+			}
+			private function readDir(dir:File,alert:Boolean=false):void
+			{
+				var arr:Array=dir.getDirectoryListing();
+				for each (var file:File in arr)
+				{
+					if(file.isDirectory)
+					{
+						readDir(file,false);
+					}
+					else if(file.type==".png")
+					{
+						readFile(file);
+					}
+				}
+				if(alert)Alert.show('创建完成');
+
+			}
+
+				
+			private function readFile(file:File):void
+			{
+				
+				var _storeDir:File=file.parent;
+				var _fileName:String=file.name;
+				_fileName=_fileName.substring(0,_fileName.length-4);
+				var bytes:ByteArray= new ByteArray();
+				var stream:FileStream=new FileStream();
+				stream.open(file,FileMode.READ);
+				stream.readBytes(bytes,0,stream.bytesAvailable);
+				stream.close();
+//				var loader:Loader=new Loader();
+//				loader.contentLoaderInfo.addEventListener(Event.COMPLETE,onComplete);
+//				loader.loadBytes(bytes);
+				var bytesLoader:BytesLoader=new BytesLoader()
+				bytesLoader.setData({fileName:_fileName,storeDir:_storeDir})
+				bytesLoader.load(bytes);
+				bytesLoader.loadCompleteCalback=onComplete
+				
+			}
+//			private function onComplete(e:Event):void
+			private function onComplete(bytesLoader:BytesLoader,domain:ApplicationDomain):void
+			{
+//				var bitmap:Bitmap=LoaderInfo(e.currentTarget).content as Bitmap;
+				var bitmap:Bitmap=bytesLoader.content as Bitmap
+				var tempData:Object=bytesLoader.getData();
+				var alphpaMask:BitmapData=BitmapDataManager.getAlphaMask(bitmap.bitmapData);
+				var rgbData:BitmapData=BitmapDataManager.getRBG(bitmap.bitmapData);
+				var coder2:JPEGEncoder=new JPEGEncoder(int(rgbID.text));
+				var rgbBytes:ByteArray=coder2.encode(rgbData);
+				
+				var coder1:JPEGEncoder=new JPEGEncoder(int(alphaID.text));
+				var maskBytes:ByteArray=coder1.encode(alphpaMask);
+
+				var _fileName:String=tempData.fileName
+				var storeDir:File=tempData.storeDir
+				var alphaFileName:String=_fileName
+				var rbgFileName:String=_fileName+".jpg"
+				createFile(alphaFileName,maskBytes,storeDir);
+				createFile(rbgFileName,rgbBytes,storeDir);
+			}
+			
+			private function createFile(fileName:String,bytes:ByteArray,storeDir:File):void
+			{
+				var file:File=File.desktopDirectory;
+				file.url=storeDir.url+"/"+fileName;
+				if(!file.exists)
+				{
+					file=storeDir.resolvePath(fileName);
+				}
+				writeFile(file,bytes);
+
+			}
+			
+			private function writeFile(file:File,bytes:ByteArray):void
+			{
+				var stream:FileStream=new FileStream();
+				stream.open(file,FileMode.WRITE);
+				stream.writeBytes(bytes,0,bytes.bytesAvailable);
+				stream.close();
+			}
+			
+			
+		]]>
+	</fx:Script>
+	<s:TextInput id="rgbID" x="66" y="26" width="77" text="80" restrict="0-9"/>
+	<s:TextInput id="alphaID" x="66" y="56" width="76" text="50" restrict="0-9"/>
+	<s:Label x="39" y="36" text="rbg"/>
+	<s:Label x="26" y="66" text="alpha"/>
+	<s:Label x="63" y="95" color="#A92020" fontSize="16" text="png转化为jpg"/>
+</s:WindowedApplication>

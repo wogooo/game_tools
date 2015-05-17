@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<actionScriptProperties analytics="false" mainApplicationPath="ExcelParser.mxml" projectUUID="59f65a5f-d6ee-40cc-9f3f-6bd62e9206a6" version="10">
+<actionScriptProperties analytics="false" mainApplicationPath="PngSplit.mxml" projectUUID="6e497f91-0bec-4e12-a21c-af8947eeb9ff" version="10">
   <compiler additionalCompilerArguments="-locale en_US" autoRSLOrdering="true" copyDependentFiles="true" fteInMXComponents="false" generateAccessible="true" htmlExpressInstall="true" htmlGenerate="false" htmlHistoryManagement="false" htmlPlayerVersionCheck="true" includeNetmonSwc="false" outputFolderPath="bin-debug" removeUnusedRSL="true" sourceFolderPath="src" strict="true" targetPlayerVersion="0.0.0" useApolloConfig="true" useDebugRSLSwfs="true" verifyDigests="true" warn="true">
-    <compilerSourcePath/>
+    <compilerSourcePath>
+      <compilerSourcePathEntry kind="1" linkType="1" path="F:/yefeng/as3/src"/>
+    </compilerSourcePath>
     <libraryPath defaultLinkType="0">
       <libraryPathEntry kind="4" path="">
         <excludedEntries>
@@ -14,7 +16,7 @@
     <sourceAttachmentPath/>
   </compiler>
   <applications>
-    <application path="ExcelParser.mxml">
+    <application path="PngSplit.mxml">
       <airExcludes/>
     </application>
   </applications>
@@ -23,7 +25,7 @@
   <flashCatalyst validateFlashCatalystCompatibility="false"/>
   <buildTargets>
     <buildTarget buildTargetName="default">
-      <airSettings airCertificatePath="E:/as3/card.p12" airTimestamp="false" anePathSet="true" version="1">
+      <airSettings airCertificatePath="F:/yefeng/flash/card.p12" airTimestamp="true" anePathSet="true" version="1">
         <airExcludes/>
         <anePaths/>
       </airSettings>
