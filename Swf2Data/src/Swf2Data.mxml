@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009"
+					   xmlns:s="library://ns.adobe.com/flex/spark"
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   width="415" height="125" creationComplete="init(event)">
+	<fx:Script>
+		<![CDATA[
+			import com.YFFramework.air.FileUtil;
+			import com.YFFramework.core.net.loader.file.FileLoader;
+			import com.YFFramework.core.utils.UtilString;
+			
+			import mx.events.FlexEvent;
+			
+			protected function init(event:FlexEvent):void
+			{
+				// TODO Auto-generated method stub
+				addEventListener(NativeDragEvent.NATIVE_DRAG_DROP,onDragDrop);
+				addEventListener(NativeDragEvent.NATIVE_DRAG_ENTER,onDragDrop);
+			}
+			private function onDragDrop(e:NativeDragEvent):void
+			{
+				//将拖入的文件以数组形式获得，指定拖入的数据是文件数组形式
+				var files:Array = e.clipboard.getData(ClipboardFormats.FILE_LIST_FORMAT) as Array;
+				//获得拖入的第一个文件
+				var file:File = File(files[0]);
+				switch(e.type)
+				{				
+					case NativeDragEvent.NATIVE_DRAG_ENTER:  
+						if(file.type==".atf"||file.isDirectory )
+							NativeDragManager.acceptDragDrop(this);
+						break;
+					case NativeDragEvent.NATIVE_DRAG_DROP:
+						if(file.type==".atf")initFile(file)
+						else if(file.isDirectory)
+						{
+							openDir(file);
+						}
+						break;
+				}
+			}  
+			
+			private function openDir(dir:File):void
+			{
+				var arr:Array=dir.getDirectoryListing();
+				for each(var file:File in arr)
+				{
+					if(file.type==".atf")initFile(file);
+				}
+			}
+			
+			private function initFile(file:File):void
+			{
+				var loader:FileLoader=new FileLoader(URLLoaderDataFormat.BINARY);
+				loader.load(file.url,file);
+				loader.loadCompleteCallBack=callback;
+			}
+			private function callback(loader:FileLoader):void
+			{
+				var file:File=loader.getTemData() as File;
+				var fileName:String=file.name;
+				fileName=UtilString.getExactName(fileName);
+
+				var data:ByteArray=loader.data as ByteArray;
+/* 				var newData:ByteArray=new ByteArray();
+				newData.writeInt(40);
+				newData.writeBytes(data);
+ */				data.compress();
+				FileUtil.createFileByByteArray(file.parent,fileName+".map",data);
+			}
+					
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+</s:WindowedApplication>

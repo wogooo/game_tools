@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009"
+					   xmlns:s="library://ns.adobe.com/flex/spark"
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   width="317" height="139" creationComplete="init(event)">
+	<fx:Script>
+		<![CDATA[
+			import com.YFFramework.air.FileUtil;
+			import com.YFFramework.core.net.loader.file.FileLoader;
+			import com.YFFramework.core.utils.StringUtil;
+			import com.YFFramework.core.utils.UtilString;
+			
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			
+			private var _tableName:String="";
+			private var _jsonObj:Object;
+			private var _storFile:File=File.desktopDirectory;
+			protected function init(event:FlexEvent):void
+			{
+				addEventListener(NativeDragEvent.NATIVE_DRAG_DROP,onDragDrop);
+				addEventListener(NativeDragEvent.NATIVE_DRAG_ENTER,onDragDrop);
+			}
+			private function onDragDrop(e:NativeDragEvent):void
+			{
+				//将拖入的文件以数组形式获得，指定拖入的数据是文件数组形式
+				var files:Array = e.clipboard.getData(ClipboardFormats.FILE_LIST_FORMAT) as Array;
+				//获得拖入的第一个文件
+				var file:File = File(files[0]);
+				switch(e.type)
+				{				
+					case NativeDragEvent.NATIVE_DRAG_ENTER:  
+						if(file.type == ".json")
+							NativeDragManager.acceptDragDrop(this);
+						break;
+					case NativeDragEvent.NATIVE_DRAG_DROP:
+						_tableName=file.name;
+						_tableName=UtilString.getExactName(_tableName);
+						_storFile=file.parent;
+						openIt(file.url);
+						break;
+				}
+			}
+			
+			private function openIt(url:String):void
+			{
+				var loader:FileLoader=new FileLoader();
+				loader.loadCompleteCallBack=callBack;
+				loader.load(url);
+			}
+			private function callBack(loader:FileLoader):void
+			{
+				var str:String=loader.data;
+				var obj:Object=JSON.parse(str);
+				for(var id:String in obj)
+				{
+					_jsonObj=obj[id];
+					break;
+				}
+				jsontxt.text=_tableName;
+			}
+			/**生成数据
+			 */ 
+			protected function onClick(event:MouseEvent):void
+			{
+				var myId:String=StringUtil.trim(idTxt.text);
+				var className:String=getClassName(_tableName);
+				if(myId=="")Alert.show("唯一id不能为空");
+				else
+				{
+					var voClassName:String=className+"BasicVo";
+					var managerClassName:String=className+"BasicManager";
+					var voStr:String=ASCreator.CreateAsFileVo(_jsonObj,voClassName);
+					var managerStr:String=ASCreator.CreateAsFileManager(_jsonObj,myId,managerClassName,voClassName);
+					FileUtil.createFile(_storFile,voClassName+".as",voStr);
+					FileUtil.createFile(_storFile,managerClassName+".as",managerStr);
+					_jsonObj=null;
+					_tableName="";
+					Alert.show("文件生成成功!");
+				}
+			}
+			
+			
+			private function getClassName(name:String):String
+			{
+				var a:String=name.charAt(0);
+				a=a.toLocaleUpperCase();
+				var str:String=a+name.substr(1);
+				return str;
+			}
+			
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<s:Label x="8" y="51" text="唯一 id"/>
+	<s:TextInput id="idTxt" x="75" y="48" toolTip="策划表唯一id"/>
+	<s:Label x="10" y="10" color="#F80505" text="配置表生成as 支持 json csv"/>
+	<s:Button id="btn" x="103" y="84" label="生成" click="onClick(event)"/>
+	<s:TextInput id="jsontxt" x="186" y="17" width="107" enabled="false"/>
+</s:WindowedApplication>

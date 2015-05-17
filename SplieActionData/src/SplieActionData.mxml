@@ -1,0 +1,256 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009"
+					   xmlns:s="library://ns.adobe.com/flex/spark"
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   width="238" height="127" creationComplete="init(event)">
+	<fx:Script>
+		<![CDATA[
+			import com.YFFramework.air.FileUtil;
+			import com.YFFramework.core.center.manager.update.TimeOut;
+			import com.YFFramework.core.center.manager.update.UpdateManager;
+			import com.YFFramework.core.event.YFEvent;
+			import com.YFFramework.core.event.YFEventCenter;
+			import com.YFFramework.core.ui.movie.data.TypeAction;
+			import com.YFFramework.core.ui.yf2d.data.YF2dActionData;
+			import com.YFFramework.core.utils.UtilString;
+			import com.YFFramework.core.utils.image.advanced.encoder.PNGEncoder;
+			
+			import manager.ActionData;
+			import manager.FileActionDataUtil;
+			import manager.UV.ActionContainer;
+			import manager.UV.GpuFileGenerator;
+			import manager.UV.PositionUtil;
+			
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			
+			import spark.components.Group;
+			
+			import type.TypeFile;
+			
+			/**打开文件 的后缀
+			 */ 
+			private var openFileNameSub:String;
+			/**打开的文件
+			 */ 
+			private var openFileName:String;
+			
+			/**站立  行走
+			 */ 
+			public static const StandWalk:int=1;
+			
+			/**攻击
+			 */ 
+			public static const Atk:int=2;
+			
+			/**受击和死亡
+			 */ 
+			public static const HurtDead:int=3;
+			
+			/**展UV需要的 容器
+			 */ 
+			private var _uvContainer:Group;
+
+			protected function init(event:FlexEvent):void
+			{
+				addEventListener(NativeDragEvent.NATIVE_DRAG_DROP,onDragDrop);
+				addEventListener(NativeDragEvent.NATIVE_DRAG_ENTER,onDragDrop);
+				
+				///  ad  文件解析完成
+				YFEventCenter.Instance.addEventListener(FileActionDataUtil.ActionDataComplete,onAndroidDataComplete);
+				_uvContainer=new Group();
+				addElement(_uvContainer);
+				addEventListener(Event.ENTER_FRAME,onUpdate);
+			}
+			private function onUpdate(e:Event):void
+			{
+				UpdateManager.Instance.update();
+				//	bloodPane.initData(bloodComponent.x-roleBasePoint.x,bloodComponent.y-roleBasePoint.y);
+			}
+			
+			/** android 文件播放完成
+			 */ 
+			private function onAndroidDataComplete(e:YFEvent):void
+			{
+				var data:Object=e.param 
+				var actionData:ActionData=data.actionData;
+				var flag:Object=data.flag;
+				var myAct:int=flag.index;
+				var dir:File=flag.dir;
+				var name:String=flag.name;
+				switch(myAct)
+				{
+					case StandWalk:
+						name +="_standWalk";
+						actionData.deleteActionExcept([TypeAction.Stand,TypeAction.Walk]);
+						break;
+					case HurtDead:
+						name +="_hurtDead";
+						actionData.deleteActionExcept([TypeAction.Injure,TypeAction.Dead]);
+						break;
+					case Atk:
+						name +="_atk";
+						actionData.deleteActionExcept([TypeAction.Attack]);
+						break;
+				}
+				name +=TypeFile.ActionDataExtension;
+				
+			//	var dict:Dictionary=doActionDataUV(actionData,_uvContainer);
+				FileActionDataUtil.createActionData(actionData,dir,name);
+				
+		//		saveUV_FlashData(dict,actionData,dir,name);
+			}
+			
+			
+			/**设置 UV
+			 */ 
+			private function doActionDataUV(actionData:ActionData,container:Group):Dictionary
+			{
+				container.removeAllElements();
+				var myDict:Dictionary=new Dictionary();
+				var actDict:Dictionary;
+				var actionContainer:ActionContainer;
+				for each(var action:int in actionData.getActionArr())
+				{
+					actDict=new Dictionary();
+					myDict[action]=actDict;
+					for each(var direction:int in actionData.getDirectionArr(action) )
+					{
+						actionContainer=new ActionContainer();
+						PositionUtil.positionActionDataAuto(actionData,action,direction,actionContainer);
+						actDict[direction]=actionContainer;
+						container.addElement(actionContainer);
+					}
+				}
+				return myDict;
+			}
+			
+			/**保存flash UV数据
+			 */ 
+			private function saveUV_FlashData(dict:Dictionary,actionData:ActionData,openFileDir:File,fileName:String):void
+			{
+				/// flex的像素拷贝必须要延时    ,要不然 就会拷贝 不了 像素 
+//				var time:TimeOut=new TimeOut(2000,saveFlashUV,{actionData:actionData,openFileDir:openFileDir,fileName:fileName,dict:dict});
+//				time.start();
+				
+				saveFlashUV({actionData:actionData,openFileDir:openFileDir,fileName:fileName,dict:dict});
+			}
+			private function saveFlashUV(obj:Object):void
+			{
+				var actionData:ActionData=obj.actionData;
+				var openFileDir:File=obj.openFileDir;
+				var fileName:String=obj.fileName;
+				var _uvDict:Dictionary=obj.dict;
+				var bitmapDataArr:Array=[]; 
+				var yfData:YF2dActionData=GpuFileGenerator.createYF2dData(actionData.headerData,_uvDict,bitmapDataArr);
+				fileName +="_s";
+				var header:ByteArray=GpuFileGenerator.createyf2DHead(yfData);
+				FileUtil.createFileByByteArray(openFileDir,fileName+TypeFile.yf2dHeadExtension,header);
+				//// 分解  
+				var len:int=bitmapDataArr.length;
+				var coder:PNGEncoder=new PNGEncoder();
+				var name:String;
+				for(var i:int=0;i!=len;++i)
+				{
+					name=bitmapDataArr[i].name;
+					var pngBytes:ByteArray=coder.encode(bitmapDataArr[i].data);
+					FileUtil.createFileByByteArray(openFileDir,fileName+"/"+name+".png",pngBytes);
+				}
+				_uvContainer.removeAllElements();
+//				Alert.show("yf2d头文件文件创建完成");
+			}
+
+			
+			
+
+			private function onDragDrop(e:NativeDragEvent):void
+			{
+				//将拖入的文件以数组形式获得，指定拖入的数据是文件数组形式
+				var files:Array = e.clipboard.getData(ClipboardFormats.FILE_LIST_FORMAT) as Array;
+				//获得拖入的第一个文件
+				var file:File = File(files[0]);
+				switch(e.type)
+				{				
+					case NativeDragEvent.NATIVE_DRAG_ENTER:  
+						if(file.isDirectory || file.type == TypeFile.ActionDataExtension)
+							NativeDragManager.acceptDragDrop(this);
+						break;
+					case NativeDragEvent.NATIVE_DRAG_DROP:
+						if(file.type == TypeFile.ActionDataExtension)  // .android
+						{
+							openFile(file);	
+						}
+						else if(file.isDirectory)
+						{
+							openDir(file);
+							Alert.show("生成OK");
+						}
+						break;
+				}
+			}
+			
+			private function openDir(dir:File):void
+			{
+				var arr:Array=dir.getDirectoryListing();
+				for each(var file:File in arr)
+				{
+					if(file.type == TypeFile.ActionDataExtension)
+					{
+						openFile(file,false);	
+					}
+					else if(file.isDirectory)
+					{
+						openDir(file); // 递归 
+					}
+				}
+			
+			}
+			
+			
+			/**加载 文件
+			 */ 
+			private function openFile(file:File,alert:Boolean=true):void
+			{
+				openFileName=UtilString.getExactName(file.name);
+				openFileNameSub=UtilString.getSuffix(file.name);
+				
+				var storeDir:File=file.parent;
+				var bytes:ByteArray=new ByteArray();
+				var stream:FileStream=new FileStream();
+				stream.open(file,FileMode.READ);
+				stream.readBytes(bytes,0,stream.bytesAvailable);
+				stream.close();
+				bytes.position=0;
+				
+				switch(openFileNameSub)
+				{
+					case "ActionData":
+						
+						var standBytes:ByteArray=cloneBytes(bytes);
+						var atkBytes:ByteArray=cloneBytes(bytes);
+						FileActionDataUtil.analysseActionData(standBytes,{index:StandWalk,name:openFileName,dir:storeDir});
+						FileActionDataUtil.analysseActionData(atkBytes,{index:Atk,name:openFileName,dir:storeDir});
+						FileActionDataUtil.analysseActionData(bytes,{index:HurtDead,name:openFileName,dir:storeDir});
+						if(alert)
+						{
+							Alert.show("生成完成");
+						}
+						break;
+				}
+						
+			}
+			
+			private function cloneBytes(bytes:ByteArray):ByteArray
+			{
+				var myBytes:ByteArray=new ByteArray();
+				myBytes.writeBytes(bytes,0,myBytes.length);
+				myBytes.position=0;
+				return myBytes;
+			}
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<s:Label x="43" y="66" text="给ActionData的拆包工具"/>
+</s:WindowedApplication>

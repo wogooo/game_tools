@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009"
+					   xmlns:s="library://ns.adobe.com/flex/spark"
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   width="261" height="105" creationComplete="init(event)">
+	<fx:Script>
+		<![CDATA[
+			import com.YFFramework.air.FileUtil;
+			import com.YFFramework.core.debug.print;
+			import com.YFFramework.core.net.loader.file.FileLoader;
+			import com.YFFramework.core.utils.UtilString;
+			
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			
+			private var file:File=File.desktopDirectory;
+			private var fileName:String;
+			private var storeDir:File;//存储目录
+			
+			private var swfBytes:ByteArray;
+			private var headBytes:ByteArray;
+			private static const Extension:String=".chitu";
+			private static const yf2dExtention:String=".yf2d";
+			
+			private static const ResExtention:String=".res";
+			///什么类型的头
+			private var flag:int;
+			private const Head:int=1;
+			private const yf2dHead:int=2;
+			private const resHead:int=3; 
+			protected function init(event:FlexEvent):void
+			{
+				// TODO Auto-generated method stub
+				addEventListener(NativeDragEvent.NATIVE_DRAG_DROP,onDragDrop);
+				addEventListener(NativeDragEvent.NATIVE_DRAG_ENTER,onDragDrop);
+			}
+			private function onDragDrop(e:NativeDragEvent):void
+			{
+				//将拖入的文件以数组形式获得，指定拖入的数据是文件数组形式
+				var files:Array = e.clipboard.getData(ClipboardFormats.FILE_LIST_FORMAT) as Array;
+				//获得拖入的第一个文件
+				var file:File = File(files[0]);
+				switch(e.type)
+				{				
+					case NativeDragEvent.NATIVE_DRAG_ENTER:  
+						if(file.type==".swf"||file.type==".head"||file.type==".yf2dHead"||file.type==".resHead"||file.isDirectory==true )
+							NativeDragManager.acceptDragDrop(this);
+						break;
+					case NativeDragEvent.NATIVE_DRAG_DROP:
+						if(file.type==".swf"||file.type==".head"||file.type==".yf2dHead"||file.type==".resHead" )
+						{
+//							initLoad(file)
+							
+							readFile(file);
+						}
+						else if(file.isDirectory) // 如果为文件夹
+						{
+							handleDir(file);
+						}
+						
+						break;
+				}
+			}  
+			
+			private function handleDir(file:File):void
+			{
+				var arr:Array=file.getDirectoryListing()
+				var swfFile:File=File.desktopDirectory;
+				var swfName:String
+				var index:int;
+				for each(var file:File in arr)
+				{
+					if(file.type==".yf2dHead")
+					{
+						swfName=UtilString.getExactName(file.name);
+						swfName=file.parent.url+"/"+swfName+".swf"
+						swfFile.url=swfName;
+						readFile(file);
+						readFile(swfFile);
+					}
+					else if(file.type==".head")
+					{
+						swfName=UtilString.getExactName(file.name);
+						swfName=file.parent.url+"/"+swfName+".swf"
+						swfFile.url=swfName;
+						readFile(file);
+						readFile(swfFile);
+					}
+				}
+				Alert.show("文件生成完成");
+			}
+			
+			
+			
+			private function initLoad(file:File):void
+			{
+				fileName=file.name;
+				var index:int=fileName.indexOf(".");
+				fileName=fileName.substring(0,index);
+				this.file=file;
+				
+				var loader:FileLoader=new FileLoader(URLLoaderDataFormat.BINARY);
+				loader.load(file.url);
+				loader.loadCompleteCallBack=callback;
+				
+				
+			}
+			
+			private function readFile(file:File):void
+			{
+				fileName=file.name;
+				var index:int=fileName.indexOf(".");
+				fileName=fileName.substring(0,index);
+				this.file=file;
+				
+				
+				var bytes:ByteArray=new ByteArray();
+				var stream:FileStream=new FileStream();
+				stream.open(file,FileMode.READ);
+				stream.readBytes(bytes,0,stream.bytesAvailable);
+				stream.close();
+				bytes.position=0;
+				handleBytes(bytes,false);
+			}
+			
+			private function handleBytes(data:ByteArray,alert:Boolean=true):void
+			{
+				if(file.type==".swf")
+				{
+					swfBytes=data;
+					swfBtn.alpha=1;
+				}
+				else   //头部
+				{
+					if(file.type==".head")
+					{
+						flag=Head;
+					}
+					else if(file.type==".yf2dHead")
+					{
+						flag=yf2dHead;
+					}
+					else if(file.type==".resHead")
+					{
+						flag=resHead;
+					}
+					
+					
+					headBytes=data;
+					storeDir=file.parent;
+					headerBtn.alpha=1;
+					
+				}
+				
+				if(swfBytes&&headBytes)
+				{
+					var mydata:ByteArray=new ByteArray();
+					mydata.writeInt(headBytes.length);
+					mydata.writeInt(swfBytes.length);
+					mydata.writeBytes(headBytes);
+					mydata.writeBytes(swfBytes);
+					mydata.compress();
+					var name:String
+					if(flag==Head)name=fileName+Extension;
+					else if(flag==yf2dHead)name=fileName+yf2dExtention;
+					else if(flag==resHead)name=fileName+ResExtention;
+					
+					FileUtil.createFileByByteArray(storeDir,name,mydata);
+					swfBytes=null;
+					headBytes=null;
+					if(alert)	Alert.show("文件生成完成");
+					headerBtn.alpha=0.5;
+					swfBtn.alpha=0.5;
+					
+					///删除本目录下的 .head文件 和.swf文件   以及图片文件夹
+					var swfFile:File=File.desktopDirectory;
+					swfFile.url=storeDir.url+"/"+fileName+".swf";
+					var headFile:File=File.desktopDirectory;
+					headFile.url=storeDir.url+"/"+fileName+".head";
+					var yf2dFile:File=File.desktopDirectory;
+					yf2dFile.url=storeDir.url+"/"+fileName+".yf2dHead";
+					var resdHeadFile:File=File.desktopDirectory;
+					resdHeadFile.url=storeDir.url+"/"+fileName+".resHead";
+					var folder:File= File.desktopDirectory;
+					folder.url=storeDir.url+"/"+fileName;
+					if(swfFile.exists)swfFile.moveToTrashAsync();
+					if(headFile.exists)headFile.moveToTrashAsync();
+					if(yf2dFile.exists)yf2dFile.moveToTrashAsync();
+					if(resdHeadFile.exists)resdHeadFile.moveToTrashAsync();
+					if(folder.exists)folder.moveToTrashAsync();
+				}
+			}
+			private function callback(loader:FileLoader):void
+			{
+				var data:ByteArray=loader.data as ByteArray;
+				handleBytes(data);
+			}
+			
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<s:Button id="headerBtn" x="24" y="35" width="70" height="36" label="header" alpha="0.5"
+			  chromeColor="#47CDDD" color="#FB1F0E" fontSize="15"/>
+	<s:Button id="swfBtn" x="157" y="35" width="70" height="36" label="SWF" chromeColor="#47CDDD"
+			  color="#FB1F0E" fontSize="15" alpha="0.5"/>
+	<s:Label x="6" y="10" text="header和swf的合成"/>
+</s:WindowedApplication>

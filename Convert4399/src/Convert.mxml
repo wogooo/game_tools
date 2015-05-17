@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009"
+					   xmlns:s="library://ns.adobe.com/flex/spark"
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   width="349" height="140" creationComplete="init(event)">
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.YFFramework.air.FileUtil;
+			import com.YFFramework.core.net.loader.image_swf.UILoader;
+			import com.YFFramework.core.utils.UtilString;
+			
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			import mx.graphics.codec.PNGEncoder;
+			
+			private var _storeFile:File=File.desktopDirectory;
+			
+			private var _fileName:String;
+			///英雄远征转化
+			private var  _YXYZisFlip:Boolean;
+			//远古封神转化
+			private var _YGFSFlip:Boolean;
+			//是否为坐骑
+			private var _MountFlip:Boolean;
+			protected function init(event:FlexEvent):void
+			{
+				// TODO Auto-generated method stub
+				///托物体进来 
+				addEventListener(NativeDragEvent.NATIVE_DRAG_DROP,onDragDrop);
+				addEventListener(NativeDragEvent.NATIVE_DRAG_ENTER,onDragDrop);
+			}
+			private function onDragDrop(e:NativeDragEvent):void
+			{
+				//将拖入的文件以数组形式获得，指定拖入的数据是文件数组形式
+				var files:Array = e.clipboard.getData(ClipboardFormats.FILE_LIST_FORMAT) as Array;
+				//获得拖入的第一个文件
+				var file:File = File(files[0]);
+				switch(e.type)
+				{				
+					case NativeDragEvent.NATIVE_DRAG_ENTER:  
+						if(file.type==".swf")
+							NativeDragManager.acceptDragDrop(this);
+						break;
+					case NativeDragEvent.NATIVE_DRAG_DROP:
+						_storeFile=file.parent;
+						_fileName=UtilString.getExactName(file.url);
+						_storeFile=FileUtil.createDirectory(_storeFile.url+"/"+_fileName); 
+						openFile(file.url);
+						_YXYZisFlip=isYXYZFlip(flipBtn.mouseX,flipBtn.mouseY);
+						if(!_YXYZisFlip) _YGFSFlip=isYGFSFlip(flipBtn0.mouseX,flipBtn0.mouseY);
+						if(!_YGFSFlip) _MountFlip=isMountFlip(flipBtn1.mouseX,flipBtn1.mouseY);
+						break;
+				}
+			}  
+			private function openFile(url:String):void
+			{
+				var loader:UILoader=new UILoader();
+				loader.loadCompleteCallback=callBack;
+				loader.initData(url);
+			}
+			
+			private function callBack(content:DisplayObject,obj:Object):void
+			{
+				var _mc:MovieClip=content as MovieClip;
+				var pngFileArr:Vector.<BitmapDataName>//
+				if(_YXYZisFlip) pngFileArr=CovertFileManager.convertYXYZSWFToPNGSequence(_mc,_YXYZisFlip);
+				else if(_YGFSFlip)pngFileArr=CovertFileManager.convertYGFSSWFToPNGSequence(_mc,_YGFSFlip);
+				///当为坐骑文件时 
+				else if(_MountFlip) pngFileArr=CovertFileManager.converMountSWFToPNGSequence(_mc);
+				else  pngFileArr=CovertFileManager.convertYXYZSWFToPNGSequence(_mc,false);
+				var code:PNGEncoder=new PNGEncoder();
+				var name:String;
+				var bytes:ByteArray;
+				for each (var data:BitmapDataName in pngFileArr)
+				{
+					///当为角色文件
+					if(_YXYZisFlip||_YGFSFlip||_MountFlip)data=CovertFileManager.flipYPic(data);
+					name=data.name;
+					//生成文件
+					bytes=code.encode(data);
+					FileUtil.createFileByByteArray(_storeFile,name+".png",bytes);
+				}
+				
+				Alert.show("文件生成完成!");
+				flipBtn.alpha=0.1;
+				flipBtn0.alpha=0.1;
+				flipBtn1.alpha=0.1;
+				_YXYZisFlip=false;
+				_YGFSFlip=false;
+
+
+			}
+
+			
+			//是否翻转?  英雄远征
+			private function isYXYZFlip(px:int,py:int):Boolean
+			{
+				if(flipBtn.getRect(flipBtn).contains(px,py))
+				{
+					flipBtn.alpha=1
+					return true;
+				}
+				return false;
+			}
+			
+			private function isYGFSFlip(px:int,py:int):Boolean
+			{
+				if(flipBtn0.getRect(flipBtn0).contains(px,py))
+				{
+					flipBtn0.alpha=1
+					return true;
+				}
+				return false;
+			}
+			
+			///是否为坐骑
+			private function isMountFlip(px:int,py:int):Boolean
+			{
+				if(flipBtn1.getRect(flipBtn1).contains(px,py))
+				{
+					flipBtn1.alpha=1
+					return true;
+				}
+				return false;
+			}
+
+
+			
+		]]>
+	</fx:Script>
+	<s:Label x="22" y="10" color="#F01F1F" fontSize="20" text="远古封神 英雄远征资源转化器"/>
+	<s:Button id="flipBtn" x="12" y="51" width="98" height="63" label="英雄远征翻转" alpha="0.1"
+			  chromeColor="#0DC4E5" />
+	<s:Button id="flipBtn0" x="118" y="49" width="98" height="63" label="远古封神翻转" alpha="0.1"
+			  chromeColor="#0DC4E5" />
+	<s:Button id="flipBtn1" x="224" y="49" width="98" height="63" label="坐骑转化" alpha="0.1"
+			  chromeColor="#0DC4E5" />
+</s:WindowedApplication>

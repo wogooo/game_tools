@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009"
+					   xmlns:s="library://ns.adobe.com/flex/spark"
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   width="425" height="107" creationComplete="initUI(event)">
+	<fx:Script>
+		<![CDATA[
+			import com.YFFramework.air.FileUtil;
+			import com.YFFramework.core.net.loader.file.FileLoader;
+			
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			
+			private var file:File=File.documentsDirectory;
+			private var jsonName:String="jsonLib.txt"
+				
+			private var exportFileName:String="jsonLib.lib"
+			//存储目录
+			private var storeDir:File=File.documentsDirectory;
+			
+			
+			private var _chooseDirFile:File=File.desktopDirectory;
+			protected function initUI(event:FlexEvent):void
+			{
+				addEvents();
+				file.nativePath=file.nativePath+"\\"+jsonName;
+				if(!file.exists)
+				{
+					file=FileUtil.createFile(File.documentsDirectory,jsonName,"D:\\web\\game01\\myStatic\\static");
+					dirRoot.text="D:\\web\\game01\\myStatic\\static";
+				}
+				else 
+				{
+					var loader:FileLoader=new FileLoader(URLLoaderDataFormat.BINARY);
+					loader.loadCompleteCallBack=callIt;
+					loader.load(file.url)
+				}
+			}
+			private function callIt(loader:FileLoader):void
+			{
+				dirRoot.text=String(loader.data);
+			}
+			
+			protected function btn_clickHandler(event:MouseEvent):void
+			{
+				file=FileUtil.createFile(File.documentsDirectory,jsonName,dirRoot.text);
+				Alert.show("目录更改成功");
+			}
+			
+			private function addEvents():void
+			{
+				addEventListener(NativeDragEvent.NATIVE_DRAG_DROP,onDragDrop);
+				addEventListener(NativeDragEvent.NATIVE_DRAG_ENTER,onDragDrop);
+				_chooseDirFile.addEventListener(Event.SELECT,onSelect);
+			}
+			
+			private function onDragDrop(e:NativeDragEvent):void
+			{
+				//将拖入的文件以数组形式获得，指定拖入的数据是文件数组形式
+				var files:Array = e.clipboard.getData(ClipboardFormats.FILE_LIST_FORMAT) as Array;
+				//获得拖入的第一个文件
+				var file:File = File(files[0]);
+				switch(e.type)
+				{				
+					case NativeDragEvent.NATIVE_DRAG_ENTER:  
+						if(file.type==".xml")
+							NativeDragManager.acceptDragDrop(this);
+						break;
+					case NativeDragEvent.NATIVE_DRAG_DROP:
+						if(file.type==".xml" )
+						{
+							loadFile(file.url);
+						}
+						break;
+				}
+			}  
+			private function loadFile(url:String):void
+			{
+				var loader:FileLoader=new FileLoader();
+				loader.loadCompleteCallBack=xmlLoad
+				loader.load(url);
+			}
+			private function xmlLoad(loader:FileLoader):void
+			{
+				var xml:XML=new XML(loader.data);
+				var myDir:File=new File(dirRoot.text);
+				ConfigManager.Instance.setRoot(myDir.url+"/");  ///设置根目录
+				ConfigManager.Instance.parseData(xml);
+				
+				var fileList:Vector.<Object>=ConfigManager.Instance.getFileList();
+				storeDir.url=fileList[0].url;
+				storeDir=storeDir.parent; //设置存储目录
+
+				var filesLoader:MoreFileLoader=new MoreFileLoader();
+				filesLoader.loadCompleteCallBack=completeFilesLoad;
+				filesLoader.load(fileList);
+
+			}
+			/**配置文件加载完成
+			 */		
+			private function completeFilesLoad(loader:MoreFileLoader):void
+			{
+				var  dataArr:Array=loader.dataArr;  ///保存所有的表数据
+				loader.dispose();
+				var jsonObj:Object;
+				var id:int;
+				var  totalBytes:ByteArray=new ByteArray();
+				var childbytes:ByteArray;
+				for each (var obj:Object in dataArr) ///处理每一张表 
+				{
+					jsonObj=JSON.parse(obj.data);
+					id=obj.id;
+					childbytes=new ByteArray();
+					childbytes.writeInt(id);
+					childbytes.writeObject(jsonObj);
+					childbytes.position=0;
+					totalBytes.writeInt(childbytes.length);
+					totalBytes.writeBytes(childbytes);
+				}
+				totalBytes.compress();
+				FileUtil.createFileByByteArray(storeDir,exportFileName,totalBytes);
+				Alert.show("jsonLib生成成功,文件在你的json目录下");
+			}
+			
+			
+			protected function chooseDir_clickHandler(event:MouseEvent):void
+			{
+				_chooseDirFile.browseForDirectory("选择路径");
+			}
+			private function onSelect(e:Event):void
+			{
+				dirRoot.text=_chooseDirFile.nativePath;
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<s:Button id="btn" x="178" y="50" label="确定" click="btn_clickHandler(event)"/>
+	<s:TextInput id="dirRoot" x="26" y="16" width="366"/>
+	<s:Button id="chooseDir" x="38" y="50" label="选择目录" click="chooseDir_clickHandler(event)"/>
+</s:WindowedApplication>

@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   creationComplete="init(event)"
+					   >
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.YFFramework.air.FileUtil;
+			import com.YFFramework.core.net.loader.file.FileLoader;
+			import com.YFFramework.core.net.loader.image_swf.UILoader;
+			import com.YFFramework.core.utils.UtilString;
+			import com.YFFramework.core.utils.common.ClassInstance;
+			
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			import mx.graphics.codec.PNGEncoder;
+			
+			private var _storeFile:File=File.desktopDirectory;
+			
+			private var _fileName:String;
+			
+			protected function init(event:FlexEvent):void
+			{
+				// TODO Auto-generated method stub
+				addEventListener(NativeDragEvent.NATIVE_DRAG_DROP,onDragDrop);
+				addEventListener(NativeDragEvent.NATIVE_DRAG_ENTER,onDragDrop);
+			}
+			private function onDragDrop(e:NativeDragEvent):void
+			{
+				//将拖入的文件以数组形式获得，指定拖入的数据是文件数组形式
+				var files:Array = e.clipboard.getData(ClipboardFormats.FILE_LIST_FORMAT) as Array;
+				//获得拖入的第一个文件
+				var file:File = File(files[0]);
+				switch(e.type)
+				{				
+					case NativeDragEvent.NATIVE_DRAG_ENTER:  
+						if(file.type==".swf")
+							NativeDragManager.acceptDragDrop(this);
+						break;
+					case NativeDragEvent.NATIVE_DRAG_DROP:
+						_storeFile=file.parent;
+						_fileName=UtilString.getExactName(file.url);
+						openFile(file.url);
+						break;
+				}
+			}  
+			private function openFile(url:String):void
+			{
+				var loader:UILoader=new UILoader();
+				loader.loadCompleteCallback=callBack;
+				var domain:ApplicationDomain=new ApplicationDomain();
+				loader.initData(url,null,domain,domain);
+			}
+			
+			private function callBack(mc:DisplayObject,data:Object=null):void
+			{
+				var domain:ApplicationDomain=data as ApplicationDomain;
+				
+				var geometry:Array=Object(mc).geometry;
+				
+				var len:int=geometry.length;
+				var Width:int=900;
+				var Height:int=900;
+				var bmpData:BitmapData;
+				var tx:int;
+				var ty:int;
+				var res:Bitmap;
+				var resData:BitmapData;
+				var container:Sprite
+				var mat:Matrix;
+				var conder:PNGEncoder=new PNGEncoder();
+				var bytes:ByteArray;
+				var mcName:String;
+				var index:int;
+				_storeFile=FileUtil.createDirectory(_storeFile.url+"/"+_fileName);
+				var myClass:Class;
+				for (var i:int=1;i<=len;i=i+2)  ///创建图片
+				{
+					tx=geometry[i-1];
+					ty=geometry[i];
+					index=int((i+1)/2);
+					mcName="F"+index;
+					myClass=domain.getDefinition(mcName) as Class;
+					resData=new myClass() as BitmapData
+					res=new Bitmap(resData);
+					res.x=tx;
+					res.y=ty;
+					container=new Sprite();
+					container.addChild(res);
+					
+					mat=new Matrix();
+					mat.tx=300;
+					mat.ty=400;
+						
+					bmpData=new BitmapData(width,Height,true,0x000000);
+					bmpData.draw(container,mat);
+					bytes=conder.encode(bmpData);
+					
+					var myStr:String=index.toString();
+					if(myStr.length==1) myStr ="0"+myStr
+					FileUtil.createFileByByteArray(_storeFile,"1-1-"+myStr+".png",bytes);
+					bmpData.dispose();
+				}
+				Alert.show("处理完成");
+			}
+			
+				
+			
+		]]>
+	</fx:Script>
+</s:WindowedApplication>

@@ -1,0 +1,295 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009"
+					   xmlns:s="library://ns.adobe.com/flex/spark"
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   width="556" height="301" initialize="init(event)">
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.YFFramework.air.FileUtil;
+			import com.YFFramework.core.debug.print;
+			import com.YFFramework.core.net.loader.file.FileLoader;
+			import com.YFFramework.core.net.loader.file.FilesLoader;
+			import com.YFFramework.core.utils.UtilString;
+			
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			
+			
+			private var _storeFile:File=File.desktopDirectory;
+			private var _fileName:String;
+			
+			private var _data:ByteArray;
+			private var _operateFunc:Function;
+			
+			//保存的是多个文件
+			private var _objArr:Array;
+			
+			protected function init(event:FlexEvent):void
+			{
+//				System.useCodePage = true;///防止加载文件出现乱码
+//				checkBtn_clickHandler();
+				///托物体进来 
+				addEventListener(NativeDragEvent.NATIVE_DRAG_DROP,onDragDrop);
+				addEventListener(NativeDragEvent.NATIVE_DRAG_ENTER,onDragDrop);
+				_objArr=[];
+			}
+			private function onDragDrop(e:NativeDragEvent):void
+			{
+				//将拖入的文件以数组形式获得，指定拖入的数据是文件数组形式
+				var files:Array = e.clipboard.getData(ClipboardFormats.FILE_LIST_FORMAT) as Array;
+				//获得拖入的第一个文件
+				var file:File = File(files[0]);
+				switch(e.type)
+				{				
+					case NativeDragEvent.NATIVE_DRAG_ENTER:  
+						if(file.type==".csv"||file.isDirectory||file.type==".json")
+							NativeDragManager.acceptDragDrop(this);
+						break;
+					case NativeDragEvent.NATIVE_DRAG_DROP:
+						if(file.type==".csv"||file.type==".json")
+						{
+							_storeFile=file.parent;
+							_fileName=UtilString.getExactName(file.url);
+							if(isBtn1())
+							{
+								mergeTxt.text=_fileName;
+								openFile2(file.url,1);
+							}
+							else if(isBtn2())
+							{
+								mergeTxt.text=_fileName;
+								openFile2(file.url,2);
+							}
+							else if(isBtn3())
+							{
+								mergeTxt.text=_fileName
+								openFile2(file.url,3);
+							}
+							else if(isBtn4())
+							{
+								mergeTxt.text=_fileName
+								openFile2(file.url,4);
+							}
+							else if(isBtn5())
+							{
+								mergeTxt.text=_fileName
+								openFile2(file.url,5);
+							}
+							else 	openFile(file.url);	
+							
+						}
+						else if(file.isDirectory)
+						{
+							_storeFile=file;
+							var arr:Array=file.getDirectoryListing();
+							var objArr:Vector.<Object>=new Vector.<Object>();
+							for each (var childFile:File in arr)
+							{
+								if(childFile.type==".csv")
+								{
+									objArr.push({url:childFile.url,name:UtilString.getExactName(childFile.url)});
+								}
+							}
+							if(objArr.length>0) openFiles(objArr);
+							else Alert.show("文件中无可转化的csv文件");
+						}
+						break;
+				}
+			}  
+			
+			
+			private function openFiles(arr:Vector.<Object>):void
+			{
+				var loader:FilesLoader=new FilesLoader();
+				loader.load(arr);
+				loader.loadCompleteCallBack=complete;
+			}
+			private function complete(loader:FilesLoader):void
+			{
+				var arr:Array=loader.dataArr;
+				var jsonStr:String;
+				var name:String; 
+				var jsonObj:Object;
+				var  bsonStr:String
+				try
+				{
+					for each(var obj:Object in arr)
+					{
+						jsonObj=CSVToJsonManager.convert(obj.data);
+						jsonStr=JSON.stringify(jsonObj);
+						name=obj.name;
+						FileUtil.createFile(_storeFile,name+".json",jsonStr);
+						
+						//// bson 文件
+						//					bsonStr=CSVToJsonManager.convertToBson(obj.data);
+						//					FileUtil.createFile(_storeFile,_fileName+".bson",bsonStr);  ///  json文件 
+					}
+					Alert.show("文件生成完成");
+				}
+				catch(e:Error)
+				{
+					Alert.show("解析出错");
+				}
+			}
+			
+			
+			private function openFile(url:String):void
+			{
+				var loader:FileLoader=new FileLoader();
+				loader.loadCompleteCallBack=callBack;
+				loader.load(url);
+			}
+			
+			private function openFile2(url:String,id:int):void
+			{
+				var loader:FileLoader=new FileLoader();
+				loader.loadCompleteCallBack=callBack2;
+				loader.load(url,{id:id,url:url});
+			}
+			private function callBack2(loader:FileLoader):void
+			{
+				var data:String=String(loader.data);
+				var tempData:Object=loader.getTemData();
+				var id:int=int(tempData.id);
+				var url:String=tempData.url;
+				var str:String=url;
+				///先取  问号
+				var index:int=str.indexOf("?");
+				if(index!=-1)str=str.substring(0,index);
+				index=	 str.lastIndexOf(".");
+				///根据 url 判断资源类型
+				var suffix:String=str.substring(index+1);//后缀
+				var obj:Object;
+				if(suffix=="csv")	obj=CSVToJsonManager.convert(data);
+				else obj=JSON.parse(data);
+				_objArr.push({id:id,data:obj});	
+			}
+			
+			
+			
+			private function callBack(loader:FileLoader):void
+			{
+				var data:String=String(loader.data);
+				print(this,data);
+				var obj:Object=CSVToJsonManager.convert(data);
+				var jsonStr:String=JSON.stringify(obj);
+				FileUtil.createFile(_storeFile,_fileName+".json",jsonStr);  ///  json文件 
+				
+				//// bson 文件
+//				var  bsonStr:String=CSVToJsonManager.convertToBson(data);
+//				FileUtil.createFile(_storeFile,_fileName+".bson",bsonStr);  ///  json文件 
+				Alert.show("文件生成完成");
+			}
+			
+			/**合成文件
+			 */ 
+			protected function onMergeClick(event:MouseEvent):void
+			{
+				// TODO Auto-generated method stub
+				if(_objArr.length>0)
+				{
+					var str:String=CSVToJsonManager.conbineData(_objArr);
+					FileUtil.createFile(_storeFile,mergeTxt.text+".json",str);
+					resetBtn();
+					Alert.show("合成文件生成完成");
+				}
+				else Alert.show("没有需要合成的文件");
+
+			}
+
+			
+			
+			private function resetBtn():void
+			{
+				btn1.alpha=btn2.alpha=btn3.alpha=btn3.alpha=btn4.alpha=btn5.alpha=0.2;
+				_objArr=[];
+			}
+	
+			/**
+			 * 是否在按钮1 上
+			 **/
+			private function isBtn1():Boolean
+			{
+				if(btn1.getRect(btn1).contains(btn1.mouseX,btn1.mouseY))
+				{
+					btn1.alpha=1;
+					return true;
+				}
+				return false;
+			}
+			
+			/**
+			 * 是否在按钮2 上
+			 **/
+			private function isBtn2():Boolean
+			{
+				if(btn2.getRect(btn2).contains(btn2.mouseX,btn2.mouseY))
+				{
+					btn2.alpha=1;
+					return true;
+				}
+				return false;
+			}
+
+			/**
+			 * 是否在按钮3 上
+			 **/
+			private function isBtn3():Boolean
+			{
+				if(btn3.getRect(btn3).contains(btn3.mouseX,btn3.mouseY))
+				{
+					btn3.alpha=1;
+					return true;
+				}
+				return false;
+			}
+
+			/**
+			 * 是否在按钮4 上
+			 **/
+			private function isBtn4():Boolean
+			{
+				if(btn4.getRect(btn4).contains(btn4.mouseX,btn4.mouseY))
+				{
+					btn4.alpha=1;
+					return true;
+				}
+				return false;
+			}
+			/**
+			 * 是否在按钮5 上
+			 **/
+			private function isBtn5():Boolean
+			{
+				if(btn5.getRect(btn5).contains(btn5.mouseX,btn1.mouseY))
+				{
+					btn5.alpha=1;
+					return true;
+				}
+				return false;
+			}
+			
+			
+//			protected function checkBtn_clickHandler(event:MouseEvent=null):void
+//			{
+//				System.useCodePage = checkBtn.selected;///防止加载文件出现乱码
+//
+//			}
+			
+		]]>
+	</fx:Script>
+	<s:Label x="10" y="16" width="306" height="26" color="#0CA0CA" fontSize="18"
+			 text="CSV转化为JSon支持文件 文件夹转化"/>
+	<s:Button id="btn1" x="42" y="90" height="123" label="1" alpha="0.2" chromeColor="#25F28A"
+			  color="#BA1B1B"/>
+	<s:Button id="btn2" x="140" y="90" height="123" label="2" alpha="0.2" chromeColor="#25F28A"/>
+	<s:Button id="btn3" x="239" y="90" height="123" label="3" alpha="0.2" chromeColor="#25F28A"/>
+	<s:Button id="btn4" x="336" y="90" height="123" label="4" alpha="0.2" chromeColor="#25F28A"/>
+	<s:Button id="btn5" x="436" y="90" height="123" label="5" alpha="0.2" chromeColor="#25F28A"/>
+	<s:Button id="mergeBtn" x="436" y="239" label="合成" click="onMergeClick(event)"/>
+	<s:TextInput id="mergeTxt" x="179" y="236" />
+	<s:Label x="88" y="239" text="合成后的文件名"/>
+</s:WindowedApplication>

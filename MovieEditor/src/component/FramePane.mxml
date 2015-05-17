@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<flex:DragPane xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:flex="com.YFFramework.air.flex.*" width="714" height="115"
+			   title="帧图片" 
+			   >
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.YFFramework.core.event.EventCenter;
+			
+			import events.ParamEvent;
+			
+			import manager.ActionData;
+			import manager.BitmapDataEx;
+			
+			import utils.ActionUtil;
+			import utils.MovieDictUtil;
+			
+			
+			private var actionData:ActionData;
+			public function updateTitle(bitmapDataEx:BitmapDataEx,actionData:ActionData):void
+			{
+				this.actionData=actionData;
+				var frameIndexObject:Object=MovieDictUtil.GetIndex(actionData,bitmapDataEx);
+				var actionStr:String=ActionUtil.GetActionName(frameIndexObject.action);
+				var directionStr:String=ActionUtil.getDirectionName(frameIndexObject.direction.toString());
+				title ="总帧-"+(frameIndexObject.index+1)+"-动作-"+actionStr+"-方向-"+directionStr+"-帧-"+bitmapDataEx.frameIndex;
+				setImageLoop(bitmapDataEx);
+			}
+			//图像播放为绿色选中状态
+			private function setImageLoop(bitmapDataEx:BitmapDataEx):void
+			{
+				var child:ImageThumbnail;
+				var len:int=container.numElements
+				for(var i:int=0;i!=len;++i)
+				{
+					child=container.getElementAt(i) as ImageThumbnail;
+					if(child.source==bitmapDataEx&&child.state!=1) child.state=2;
+					else if(child.state!=1) child.state=0;
+				}
+			}
+			//更新面板    方向 
+			public function updatePane(directionFrameArr:Vector.<BitmapDataEx>):void
+			{
+				container.removeAllElements();					
+				var thumb:ImageThumbnail;
+				var beginX:int=15;
+				var beginY:int=8;
+				var space:int=8;
+				var lastX:int=beginX;
+				
+				for each (var item:BitmapDataEx in directionFrameArr)
+				{
+					thumb=new ImageThumbnail();
+					thumb.initImage(item);
+					container.addElement(thumb);
+					thumb.x=lastX;
+					thumb.y=beginY;
+					lastX +=space+thumb.width;
+				}
+			}
+			
+			
+			protected function onMouseClick(event:MouseEvent):void
+			{
+				if(event.target is ImageThumbnail)
+				{
+					var bitmapDataEx:BitmapDataEx=event.target.source as BitmapDataEx;
+					EventCenter.Instance.dispatchEvent(new ParamEvent(ParamEvent.ViewFrameInfo,{actionData:actionData,bitmapDataEx:bitmapDataEx}));
+					setSelect(event.target as ImageThumbnail);
+					
+				}
+			}
+			
+			//设置选中,目标位红色
+			public function setSelect(data:ImageThumbnail):void
+			{
+				var child:ImageThumbnail;
+				var len:int=container.numElements
+				for(var i:int=0;i!=len;++i)
+				{
+					child=container.getElementAt(i) as ImageThumbnail;
+					if(data!=child) child.state=0;
+				}
+				data.state=1;
+			}
+			
+		]]>
+	</fx:Script>
+	<s:Label id="closeBtn" x="694" y="-23" color="#FD0606" fontSize="18" text="X" click="{visible=false}"/>
+	<s:Scroller x="0" y="0" width="100%" height="80">
+		<s:Group width="100%" height="100%" id="container" click="onMouseClick(event)">
+		</s:Group>
+	</s:Scroller>
+</flex:DragPane>

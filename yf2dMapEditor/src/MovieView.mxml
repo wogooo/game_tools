@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<flex:DragPane xmlns:fx="http://ns.adobe.com/mxml/2009"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 xmlns:flex="com.YFFramework.air.flex.*" 
+		 width="400" height="300" backgroundColor="#000000" creationComplete="preInit(event)">
+	<fx:Script>
+		<![CDATA[
+			import com.YFFramework.core.utils.image.Cast;
+			
+			import mx.events.FlexEvent;
+			
+			import view.FlexMovieClip;
+			
+			private var _movieClip:FlexMovieClip;
+			
+			protected function preInit(event:FlexEvent):void
+			{
+				_movieClip=new FlexMovieClip();
+				_movieClip.start();
+				container.addElement(_movieClip);
+				_movieClip.x=200;
+				_movieClip.y=150;
+			}
+			
+			public function source(src:Object):void
+			{
+				_movieClip.initData(src);
+				_movieClip.playDefault();
+			}
+			
+			
+			protected function onClick(event:MouseEvent):void
+			{
+				visible=false;
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+		<!--  单击 外部资源 可进行查看的对象     -->
+	</fx:Declarations>
+	<s:Scroller x="0" y="0" width="100%" height="100%">
+		<s:Group id="container" width="100%" height="100%" contentBackgroundColor="#000000">
+		</s:Group>
+	</s:Scroller>
+	<s:Label id="btn" x="379" y="-22" buttonMode="true" click="onClick(event)" color="#FA1C05"
+			 fontSize="20" fontWeight="bold" text="X"/>
+	
+	
+</flex:DragPane>

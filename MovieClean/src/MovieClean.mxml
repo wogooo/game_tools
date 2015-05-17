@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009"
+					   xmlns:s="library://ns.adobe.com/flex/spark"
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   width="377" height="239" applicationComplete="initUI(event)">
+	<fx:Script>
+		<![CDATA[
+			import com.YFFramework.core.utils.UtilString;
+			
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			
+			protected function initUI(event:FlexEvent):void
+			{
+				addEventListener(NativeDragEvent.NATIVE_DRAG_DROP,onDragDrop);
+				addEventListener(NativeDragEvent.NATIVE_DRAG_ENTER,onDragDrop);
+			}
+			private function onDragDrop(e:NativeDragEvent):void
+			{
+				//将拖入的文件以数组形式获得，指定拖入的数据是文件数组形式
+				var files:Array = e.clipboard.getData(ClipboardFormats.FILE_LIST_FORMAT) as Array;
+				//获得拖入的第一个文件
+				var file:File = File(files[0]);
+				switch(e.type)
+				{				
+					case NativeDragEvent.NATIVE_DRAG_ENTER:  
+						if(file.isDirectory==true||file.type==".atfMovie")
+							NativeDragManager.acceptDragDrop(this);
+						break;
+					case NativeDragEvent.NATIVE_DRAG_DROP:
+						if(file.isDirectory)
+						{
+							if(alphaBox.selected)
+							{
+								deleteAlphaFolder(file);
+							}
+							if(atfBox.selected)
+							{
+								reNameATFMovieByDir(file);
+							}
+							Alert.show("清理完成");
+						}
+						else if(file.type==".atfMovie")
+						{
+							reNameATFMovie(file);
+							Alert.show("转换完成");
+						}
+						break;
+				}
+			}
+			
+			/**删除 alpha文件
+			 */ 
+			private function deleteAlphaFolder(folder:File):void
+			{
+				if(folder.isDirectory)
+				{
+					var name:String=folder.name;
+					var index:int=name.lastIndexOf("_");
+					var sub:String=name.substr(index+1);
+					if(sub=="alpha")  //删除 
+					{
+						folder.moveToTrashAsync();
+					}
+					else   //深入进去
+					{
+						var arr:Array=folder.getDirectoryListing();
+						for each(var file:File in arr )
+						{
+							deleteAlphaFolder(file);
+						}
+					}
+				}
+			}
+			
+			/**重命名atf文件
+			 */ 
+			private function reNameATFMovie(file:File):void
+			{
+				if(file.type==".atfMovie")
+				{
+					var name:String=file.name;
+					var index:int=name.indexOf("_");
+					if(index!=-1)
+					{
+						name=name.substr(0,index);
+						name +=".atfMovie";
+						var newFile:File=File.desktopDirectory;
+						newFile.url=file.parent.url;
+						newFile.url=newFile.url+"/"+name;
+						file.copyTo(newFile,true);
+						file.moveToTrash();
+					}
+				}
+			}
+			private function reNameATFMovieByDir(dir:File):void
+			{
+				var arr:Array=dir.getDirectoryListing();
+				for each(var file:File in arr)
+				{
+					if(file.type==".atfMovie")
+					{
+						reNameATFMovie(file);
+					}
+					else if(file.isDirectory)
+					{
+						reNameATFMovieByDir(file);
+					}
+				}	
+			}
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<s:Label x="98" y="39" fontSize="20" text="动画文件清理"/>
+	<s:CheckBox id="alphaBox" x="77" y="111" label="_alpha文件夹删除" selected="true"/>
+	<s:CheckBox id="atfBox" x="77" y="166" label="重命名atfMovie文件只留下数字部分"/>
+</s:WindowedApplication>

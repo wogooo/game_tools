@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<j2as3:J2AS3Application
+    xmlns:mx="http://www.adobe.com/2006/mxml"
+    xmlns:j2as3="com.j2as3.*"
+    layout="vertical">
+    <mx:HBox width="100%">
+        <mx:Button 
+        	id="outputButton" 
+        	label="Output" 
+        	click="doOutput()" 
+        	toolTip="Select the output directory (you can drag and drop a directory from your file manager)"/>
+        <mx:Button 
+        	id="inputButton" 
+        	label="Input" 
+        	click="doInput()" 
+        	enabled="{outputDirSelected}" 
+        	toolTip="Select the input directory (you can drag and drop a directory from your file manager)"/>
+        <mx:ProgressBar id="progressBar" width="100%" mode="manual" visible="false" label="Converted %3%%" />        
+    </mx:HBox>
+    <mx:Label htmlText="&lt;b>Input directory:&lt;/b> {_inputDirName}"   id="inputMsg"  selectable="true" textAlign="left" width="100%" />
+    <mx:Label htmlText="&lt;b>Output directory:&lt;/b> {_outputDirName}" id="outputMsg" selectable="true" textAlign="left" width="100%" />
+    <mx:Label text="Converted files:" fontWeight="bold" textAlign="left" width="100%" />
+    <mx:TextArea id="textArea" width="100%" height="100%" toolTip="Converted file names will appear here" editable="false" />
+</j2as3:J2AS3Application>

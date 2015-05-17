@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="utf-8"?>
+<flex:DragPane xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:flex="com.YFFramework.air.flex.*" width="572" height="396"
+			   backgroundAlpha="1" 
+			   >
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.YFFramework.air.flex.FlexUI;
+			import com.YFFramework.core.center.manager.update.UpdateManager;
+			import com.YFFramework.core.map.rectMap.RectMapUtil;
+			
+			import manager.ActionData;
+			
+			import model.TypeRoad;
+			
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			
+			import view.FlexMovieClip;
+			import view.MarkObject;
+			import view.SmallRectGridView;
+			private var _movie:FlexMovieClip;
+			
+			/**添加
+			 */ 
+			public static const ADD:int=1;
+			/**删除
+			 */ 
+			public static const Delete:int=2;
+			/**什么都不做
+			 */ 
+			public static const None:int=3;
+			
+			/**格子
+			 */ 
+			private var _grid:SmallRectGridView;
+			/**跳转点层
+			 */ 
+			private var _roadLayer:FlexUI;
+			
+			public var actionData:ActionData;
+			
+			
+			private var _movieX:int;
+			private var _movieY:int;
+			
+			private var _markDict:Dictionary;
+			
+			private var _state:int;
+			
+			public function initData(actionData:ActionData):void
+			{
+				this.actionData=actionData;
+				initUI();
+			}
+			protected function initUI():void
+			{
+				_movie=new FlexMovieClip();
+				_movie.start();
+				_movie.initData(actionData);
+				_movie.playDefault();
+				movieX=89;
+				movieY=95;
+				_grid=new SmallRectGridView(width,height-35);
+				container.addElement(_movie);
+				container.addElement(_grid);
+				_roadLayer=new FlexUI();
+				container.addElement(_roadLayer);
+				_markDict=new Dictionary();
+				addEvents();
+			}
+			private function addEvents():void
+			{
+				container.addEventListener(MouseEvent.MOUSE_DOWN,onMouseEvent);
+				UpdateManager.Instance.framePer.regFunc(update);
+			}
+			
+			private function update():void
+			{
+				xTxt.text=_movie.x.toString();
+				yTxt.text=_movie.y.toString();
+			}
+			
+			
+			private function addMarks():void
+			{
+				for(var startX:int=1;startX<=4;startX++)
+				{
+					for(var startY:int=1;startY<=3;++startY)
+					{
+						addMark(startX,startY);
+					}
+				}
+			}
+			
+			
+			
+			/**添加地图跳转点
+			 */ 
+			private function addMark(tileX:int,tileY:int):void
+			{
+				var id:int=TypeRoad.Skip;
+				var key:String=getSingleKey(tileX,tileY);
+				if(!_markDict[key])
+				{
+					var markObj:MarkObject=new MarkObject(id,tileX,tileY);
+					_markDict[key]=markObj;
+					_roadLayer.addElement(markObj);
+				}
+			}
+			/**删除地图跳转点 
+			 */ 
+			private function removeMark(tileX:int,tileY:int):void
+			{
+				var key:String=getSingleKey(tileX,tileY);
+				if(_markDict[key])
+				{
+					var markObj:MarkObject=_markDict[key];
+					_roadLayer.removeElement(markObj);
+					delete _markDict[key]
+				}
+			}
+			
+			
+			
+			/**获取唯一key 
+			 */ 
+			private function getSingleKey(tileX:int,tileY:int):String
+			{
+				var key:String=tileX+"_"+tileY;
+				return key;
+			}
+					
+			/**有网格后才能绘制网格
+			 */ 
+			public function drawGrid():void
+			{
+				_grid.drawGrid();
+				
+				addMarks();  ///添加默认增加的格子
+			}
+			protected function onClick(event:MouseEvent):void
+			{
+				switch(event.currentTarget)
+				{
+					case closeBtn:
+						visible=false;
+						break;
+					case addBtn:
+						//添加 
+						_state=ADD;
+						break;
+					case deleteBtn:
+						///删除
+						_state=Delete;
+						break;
+					case noneBtn:
+						//取消状态
+						_state=None;
+						break;
+					case movieEditBtn: //编辑
+						_movie.mouseEnabled=movieEditBtn.selected;
+						break;
+				}
+				
+			}
+			
+			private function onMouseEvent(e:MouseEvent):void
+			{
+				var tilePt:Point=RectMapUtil.getTilePosition(container.mouseX,container.mouseY);
+				switch(_state)
+				{
+					case ADD:
+						addMark(tilePt.x,tilePt.y);
+						break;
+					case Delete:
+						removeMark(tilePt.x,tilePt.y);
+						break;
+					case None:
+						
+						break;
+				}
+			}
+			
+			
+			public function set movieX(value:int):void
+			{
+				_movieX=value;
+				_movie.x=_movieX;
+			}
+			public function set movieY(value:int):void
+			{
+				_movieY=value;
+				_movie.y=value;
+			}
+			
+			public function get movieX():int
+			{
+				return _movieX;	
+			}
+			
+			public function  get movieY():int
+			{
+				return _movieY;
+			}
+			
+			
+			public function get markDict():Dictionary
+			{
+				return _markDict;
+			}
+			
+		]]>
+	</fx:Script>
+	<s:Label id="closeBtn" x="549" y="-21" color="#FA0C0C" fontSize="24" text="X" click="onClick(event)"/>
+	<s:Scroller x="0" y="0" width="482" height="363">
+		<s:Group width="100%" height="100%" id="container" >
+		</s:Group>
+	</s:Scroller>
+	<s:Button id="addBtn" x="488" y="24" label="跳转标记" click="onClick(event)"/>
+	<s:Button id="deleteBtn" x="488" y="75" label="删除" click="onClick(event)"/>
+	<s:Button id="noneBtn" x="490" y="143" label="取消状态" click="onClick(event)"/>
+	<s:Label x="491" y="271" color="#E91212" text="x"/>
+	<s:Label x="492" y="299" color="#E91212" text="y"/>
+	<s:TextInput id="xTxt" x="505" y="273" width="55" editable="false"/>
+	<s:TextInput id="yTxt" x="506" y="297" width="54" editable="false"/>
+	<s:CheckBox id="movieEditBtn" x="498" y="205" label="动画可拖"
+				click="onClick(event)" selected="true"/>
+</flex:DragPane>

@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" width="178" height="88" creationComplete="init(event)">
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import mx.events.ColorPickerEvent;
+			import mx.events.FlexEvent;
+			
+			import spark.events.TextOperationEvent;
+			import spark.filters.GlowFilter;
+			
+			
+			
+			/**滤镜数据
+			 */ 
+			private var _filterData:Object;
+			
+			public static const FilterChange:String="FilterChange";
+			
+			protected function init(event:FlexEvent):void
+			{
+				_filterData=new Object();
+			}
+			
+			public function get filterData():Object
+			{
+				return _filterData;
+			}
+			public function set filterData(value:Object):void
+			{
+				_filterData=value;
+				updateData(_filterData);
+			}
+
+			protected function colorpicker1_changeHandler(event:ColorPickerEvent):void
+			{
+				handle();
+			}
+			
+			protected function textinput1_changeHandler(event:TextOperationEvent):void
+			{
+				handle();
+			}
+			
+			protected function checkbox1_clickHandler(event:MouseEvent):void
+			{
+				handle();
+			}
+			
+			private function handle():void
+			{
+				///滤镜数据
+				_filterData.color=colorPicker.selectedColor;
+				_filterData.blurX=Number(blurXTxt.text);
+				_filterData.blurY=Number(blurYTxt.text);
+				_filterData.strength=Number(strengetxt.text)/100;
+				_filterData.inner=innerCheck.selected;
+				dispatchEvent(new Event(FilterChange));
+			}
+			
+			private function updateData(data:Object):void
+			{
+				
+				colorPicker.selectedColor=data.color;
+				blurXTxt.text=data.blurX+"";
+				blurYTxt.text=data.blurY+"";
+				strengetxt.text=data.strength*100+"";
+				innerCheck.selected=data.inner;
+			}
+			
+			
+			
+		]]>
+	</fx:Script>
+	<mx:ColorPicker id="colorPicker" x="5" y="17" change="colorpicker1_changeHandler(event)"
+					toolTip="颜色"/>
+	<s:Label x="32" y="8" color="#F8ECEB" text="模糊x" toolTip="糊"/>
+	<s:Label x="33" y="32" color="#F8ECEB" text="模糊y" toolTip="模糊y"/>
+	<s:Label x="91" y="62" color="#FAECEB" text="强度" toolTip="强度"/>
+	<s:CheckBox id="innerCheck" x="5" y="58" label="是否内发光" click="checkbox1_clickHandler(event)"
+				color="#F8ECEB" toolTip="是否内发光" selected="false"/>
+	<s:TextInput id="blurXTxt" x="69" y="2" width="45" change="textinput1_changeHandler(event)"
+				 color="#F8ECEB" contentBackgroundAlpha="0.3" text="0" toolTip="模糊x"/>
+	<s:TextInput id="blurYTxt" x="69" y="28" width="45" change="textinput1_changeHandler(event)"
+				 color="#F8ECEB" contentBackgroundAlpha="0.3" text="0" toolTip="模糊y"/>
+	<s:Label x="152" y="65" color="#F8ECEB" text="%"/>
+	<s:TextInput id="strengetxt" x="120" y="59" width="31" change="textinput1_changeHandler(event)"
+				 color="#F8ECEB" contentBackgroundAlpha="0.3" text="100" toolTip="强度"/>
+</s:Group>

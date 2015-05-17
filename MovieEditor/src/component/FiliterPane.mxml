@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 xmlns:component="component.*"
+		 xmlns:flex="com.YFFramework.air.flex.*"
+		 width="400" height="116" creationComplete="init(event)">
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.YFFramework.core.event.YFEventCenter;
+			
+			import mx.events.FlexEvent;
+			
+			/**是否使用滤镜
+			 */ 
+			public var filterUse:Boolean;
+			
+			public static const FilterChange:String="FilterChange";
+			
+			public static const DisableFilter:String="DisableFilter";
+
+			public var filter1Data:Object; 
+			public var filter2Data:Object; 
+
+			protected function init(event:FlexEvent):void
+			{
+				filterCell1.addEventListener(FiliterPaneCell.FilterChange,onChange);
+				filterCell2.addEventListener(FiliterPaneCell.FilterChange,onChange);
+				filterUse=false;
+			}
+			
+			private function onChange(e:Event=null):void
+			{
+				if(filterUse)
+				{
+					filter1Data=filterCell1.filterData;
+					filter2Data=filterCell2.filterData;
+					YFEventCenter.Instance.dispatchEventWith(FilterChange,{data1:filter1Data,data2:filter2Data});
+				}
+				else YFEventCenter.Instance.dispatchEventWith(DisableFilter);
+
+			}
+			
+			protected function checkUse_clickHandler(event:MouseEvent=null):void
+			{
+				filterUse=checkUse.selected;
+				onChange();
+			}
+			
+			public function setSelect(data1:Object,data2:Object):void
+			{
+				filterCell1.filterData=data1;
+				filterCell2.filterData=data2;
+				checkUse.selected=true;
+				checkUse_clickHandler();
+			}
+			
+		]]>
+	</fx:Script>
+	<s:CheckBox id="checkUse" x="10" y="3" label="是否启用滤镜" click="checkUse_clickHandler(event)"
+				color="#F4E4E4"/>
+	<component:FiliterPaneCell id="filterCell1" x="10" y="22">
+	</component:FiliterPaneCell>
+	<component:FiliterPaneCell id="filterCell2" x="196" y="22">
+	</component:FiliterPaneCell>
+</s:Group>

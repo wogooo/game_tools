@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009"
+					   xmlns:s="library://ns.adobe.com/flex/spark"
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   width="355" height="243" applicationComplete="initUI(event)">
+	<fx:Script>           
+		<![CDATA[
+			import atfMovie.ATFMovieAnalysse;
+			import atfMovie.ATFSkillEffect;
+			
+			import com.YFFramework.core.center.update.MovieUpdateManager;
+			import com.YFFramework.core.proxy.StageProxy;
+			import com.YFFramework.core.utils.UtilString;
+			import com.YFFramework.core.yf2d.core.YF2d;
+			import com.YFFramework.core.yf2d.events.YF2dEvent;
+			
+			import data.ATFActionData;
+			
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			 
+			
+			private var _movie:ATFSkillEffect;
+			
+			protected function initUI(event:FlexEvent):void
+			{
+				addEventListener(NativeDragEvent.NATIVE_DRAG_DROP,onDragDrop);
+				addEventListener(NativeDragEvent.NATIVE_DRAG_ENTER,onDragDrop);
+				initYF2d();
+				initDisplay();
+			}
+			private function initDisplay():void
+			{
+				_movie=new ATFSkillEffect();
+				_movie.start();
+				YF2d.Instance.scence.addChild(_movie);
+				_movie.setXY(200,200);
+			} 
+			
+			private function initYF2d():void 
+			{
+				StageProxy.Instance.configure(stage);
+				YF2d.Instance.scence.addEventListener(YF2dEvent.CONTEXT_First_CREATE,onContext3dCreate);
+				YF2d.Instance.initData(stage,0x000000);
+			}
+			
+			private function onContext3dCreate(e:YF2dEvent=null):void
+			{
+				addEventListener(Event.ENTER_FRAME,onFrame);
+
+			}
+
+			 
+			private function onFrame(e:Event):void
+			{
+				MovieUpdateManager.Instance.update();
+				YF2d.Instance.render();
+			}
+
+				 
+			
+
+			 
+			private function onDragDrop(e:NativeDragEvent):void
+			{
+				//将拖入的文件以数组形式获得，指定拖入的数据是文件数组形式
+				var files:Array = e.clipboard.getData(ClipboardFormats.FILE_LIST_FORMAT) as Array;
+				//获得拖入的第一个文件
+				var file:File = File(files[0]);
+				switch(e.type)
+				{				
+					case NativeDragEvent.NATIVE_DRAG_ENTER:  
+						if(file.type==".yf2dHead"||file.isDirectory==true)
+							NativeDragManager.acceptDragDrop(this);
+						break;
+					case NativeDragEvent.NATIVE_DRAG_DROP:
+						
+						if(file.type==".yf2dHead")
+						{
+							readHead(file,true);
+						}
+						else if(file.isDirectory) // 如果为文件夹
+						{
+							handleDir(file);
+							Alert.show("生成成功");
+						}
+//						else if(file.type==FileNameExtension.ATFMovie)
+//						{
+//							openFileMovie(file);
+//						}
+//						else if(file.type==".atf")
+//						{
+//							openFileMovie(file);
+//						}
+						break;
+				}
+			}  
+			
+//			private function handleATF(file:File):void
+//			{
+//				var bytes:ByteArray=new ByteArray();
+//				var stream:FileStream=new FileStream();
+//				stream.open(file,FileMode.READ);
+//				stream.readBytes(bytes,0,stream.bytesAvailable);
+//				stream.close();
+//				bytes.position=0;
+//			}
+			
+			private function  openFileMovie(file:File):void
+			{
+				var bytes:ByteArray=new ByteArray();
+				var stream:FileStream=new FileStream();
+				stream.open(file,FileMode.READ);
+				stream.readBytes(bytes,0,stream.bytesAvailable);
+				stream.close();
+				bytes.position=0;
+				var actionData:ATFActionData=ATFMovieAnalysse.handleATFBytes(bytes);
+				_movie.initData(actionData);
+				_movie.playDefault();
+			}
+			
+			
+			
+			
+			private function handleDir(dir:File):void
+			{
+				var arr:Array=dir.getDirectoryListing();
+				for each(var file:File in arr)
+				{
+					if(file.type==".yf2dHead")
+					{
+						readHead(file,false);
+					}
+					else if(file.isDirectory)
+					{
+						handleDir(file);
+					}
+				}
+				
+			}
+			
+			
+			
+			/**读取  头 文件
+			 */
+			private function readHead(file:File,alet:Boolean):void
+			{
+				var bytes:ByteArray=new ByteArray();
+				var stream:FileStream=new FileStream();
+				stream.open(file,FileMode.READ);
+				stream.readBytes(bytes,0,stream.bytesAvailable);
+				stream.close();
+				bytes.position=0;
+				var obj:Object=bytes.readObject();
+				var atfDir:File=File.desktopDirectory;
+				var realname:String=UtilString.getExactName(file.url);
+				atfDir.url=file.parent.url+"/"+realname+"_atf" 
+				DataManager.createATFMovie(obj,atfDir,alet);
+				
+				var sourceFile:File=File.desktopDirectory;
+				sourceFile.url=file.parent.url+"/"+realname;
+				//删除文件
+				if(atfDir.exists)atfDir.moveToTrashAsync();
+				if(file.exists)file.moveToTrashAsync();
+				if(sourceFile.exists)  //删除文件
+				{
+					sourceFile.moveToTrashAsync()
+				}
+			}
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<s:Label x="56" y="109" text="yf2dhead和 atf文件夹合并为一个文件"/>
+	<s:Label x="27" y="47" color="#F71111" text="atfMovie生成器"/>
+</s:WindowedApplication>

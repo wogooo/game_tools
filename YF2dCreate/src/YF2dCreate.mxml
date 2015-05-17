@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009"
+					   xmlns:s="library://ns.adobe.com/flex/spark"
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   width="257" height="102" creationComplete="init(event)">
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.YFFramework.air.FileUtil;
+			import com.YFFramework.core.net.loader.file.FileLoader;
+			
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			
+			private var file:File=File.desktopDirectory;
+			private var fileName:String;
+			private var storeDir:File;//存储目录
+			
+			private var swfBytes:ByteArray;
+			private var headBytes:ByteArray;
+			private static const Extension:String=".yf2d";
+			
+			protected function init(event:FlexEvent):void
+			{
+				// TODO Auto-generated method stub
+				addEventListener(NativeDragEvent.NATIVE_DRAG_DROP,onDragDrop);
+				addEventListener(NativeDragEvent.NATIVE_DRAG_ENTER,onDragDrop);
+			}
+			private function onDragDrop(e:NativeDragEvent):void
+			{
+				//将拖入的文件以数组形式获得，指定拖入的数据是文件数组形式
+				var files:Array = e.clipboard.getData(ClipboardFormats.FILE_LIST_FORMAT) as Array;
+				//获得拖入的第一个文件
+				var file:File = File(files[0]);
+				switch(e.type)
+				{				
+					case NativeDragEvent.NATIVE_DRAG_ENTER:  
+						if(file.type==".atf"||file.type==".yf2dHead" )
+							NativeDragManager.acceptDragDrop(this);
+						break;
+					case NativeDragEvent.NATIVE_DRAG_DROP:
+						initLoad(file)
+						break;
+				}
+			}  
+			
+			private function initLoad(file:File):void
+			{
+				fileName=file.name;
+				var index:int=fileName.indexOf(".");
+				fileName=fileName.substring(0,index);
+				this.file=file;
+				
+				var loader:FileLoader=new FileLoader(URLLoaderDataFormat.BINARY);
+				loader.load(file.url);
+				loader.loadCompleteCallBack=callback;
+			}
+			
+			private function callback(loader:FileLoader):void
+			{
+				var data:ByteArray=loader.data as ByteArray;
+				if(file.type==".atf")
+				{
+					swfBytes=data;
+					atfBtn.alpha=1;
+				}
+				else   //头部
+				{
+					headBytes=data;
+					storeDir=file.parent;
+					headerBtn.alpha=1;
+					
+				}
+				
+				if(swfBytes&&headBytes)
+				{
+					var mydata:ByteArray=new ByteArray();
+					mydata.writeInt(headBytes.length);
+					mydata.writeInt(swfBytes.length);
+					mydata.writeBytes(headBytes);
+					mydata.writeBytes(swfBytes);
+					mydata.compress();
+					FileUtil.createFileByByteArray(storeDir,fileName+Extension,mydata);
+					swfBytes=null;
+					headBytes=null;
+					Alert.show("yf2d生成完成");
+					headerBtn.alpha=0.5;
+					atfBtn.alpha=0.5;
+					
+					///删除本目录下的 .head文件 和.swf文件   以及图片文件夹
+					var swfFile:File=File.desktopDirectory;
+					swfFile.url=storeDir.url+"/"+fileName+".atf";
+					var headFile:File=File.desktopDirectory;
+					headFile.url=storeDir.url+"/"+fileName+".yf2dHead";
+					var folder:File= File.desktopDirectory;
+					folder.url=storeDir.url+"/"+fileName;
+					if(swfFile.exists)swfFile.moveToTrashAsync();
+					if(headFile.exists)headFile.moveToTrashAsync();
+					if(folder.exists)folder.moveToTrashAsync();
+				}
+			}
+			
+			
+		]]>
+	</fx:Script>
+	<s:Button id="headerBtn" x="24" y="35" width="70" height="36" label="header" alpha="0.5"
+			  chromeColor="#47CDDD" color="#FB1F0E" fontSize="15"/>
+	<s:Button id="atfBtn" x="157" y="35" width="70" height="36" label="ATF" chromeColor="#47CDDD"
+			  color="#FB1F0E" fontSize="15" alpha="0.5"/>
+	<s:Label x="6" y="10" text="yf2dHead和atf的合成"/>
+
+</s:WindowedApplication>

@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:BorderContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" width="422" height="230">
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			
+			/**获取配置shuj
+			 */ 
+			public function getData():Object
+			{
+				var obj:Object={};
+				obj.stepType=int(stepTypeTxt.text);  /// 类型 1.对话 ， 2.打怪 3.采集， 4.打怪收集 5.运镖任务 6.劫镖任务  7. 护送任务
+				obj.stepId=int(currentStepTxt.text);  ///当前处于第几个步骤
+				obj.state=int(stateTypeTxt.text);  ///该步骤属于什么状态  是 可接 还是进行中 还是完成
+				obj.npcTalk=npcTalkTxt.text ;/// npc说话
+				obj.playTalk=playTalkTxt.text;///玩家说话
+				obj.guide0=gudeTxt0.text; ///引导 
+				obj.guide1=gudeTxt1.text; ///引导 
+				obj.guide2=gudeTxt2.text; ///引导 
+				obj.guide3=gudeTxt3.text; ///引导 
+				obj.relativeId=relativeIdTxt.text;  ///引导的   npc id 
+				obj.relativeX=int(xTxt.text);
+				obj.relativeY=int(yTxt.text);
+				return obj;
+			}
+			
+			/**创建
+			 */ 
+			public function fillData(obj:Object):void
+			{
+				stepTypeTxt.text=obj.stepType.toString();
+				currentStepTxt.text=obj.stepId.toString();
+				stateTypeTxt.text=obj.state.toString();
+				npcTalkTxt.text=obj.npcTalk.toString();
+				playTalkTxt.text=obj.playTalk.toString();
+				if(obj.guide0)
+				{
+					gudeTxt0.text=obj.guide0.toString();
+					gudeTxt1.text=obj.guide1.toString();
+					gudeTxt2.text=obj.guide2.toString();
+					gudeTxt3.text=obj.guide3.toString();
+					relativeIdTxt.text=obj.relativeId;
+					xTxt.text=obj.relativeX.toString();
+					yTxt.text=obj.relativeY.toString();
+				}
+
+			}
+			
+			
+			public function clear():void
+			{
+				npcTalkTxt.text="";
+				playTalkTxt.text="";
+				relativeIdTxt.text="0";
+				xTxt.text="0";
+				yTxt.text="0";
+			}
+			
+			
+		]]>
+	</fx:Script>
+	<s:Label x="10" y="14" text="步骤类型" toolTip="步骤模型，1.对话 ， 2.打怪 3.采集， 4.打怪收集 5.运镖任务 6.劫镖任务  7. 护送任务"/>
+	<s:Label x="149" y="14" text="当前步数" toolTip="第几步骤"/>
+	<s:Label x="273" y="16" text="状态标志" toolTip="1.可接 2. 进行中，3 完成"/>
+	<s:Label x="3" y="57" text="NPC说话"/>
+	<s:Label x="2" y="112" text="主角回话"/>
+	<s:TextInput id="stepTypeTxt" x="65" y="10" width="60"
+				 toolTip="步骤模型，1.对话 ， 2.打怪 3.采集， 4.打怪收集 5.运镖任务 6.劫镖任务  7. 护送任务" restrict="0-9"/>
+	<s:TextInput id="currentStepTxt" x="204" y="10" width="60" toolTip="第几步骤" editable="false" restrict="0-9"/>
+	<s:TextInput id="stateTypeTxt" x="334" y="11" width="60" toolTip="1.可接 2. 进行中，3 完成" restrict="0-9"/>
+	<s:TextArea id="npcTalkTxt" x="57" y="35" width="356" height="53" toolTip="npc对话"/>
+	<s:TextArea id="playTalkTxt" x="57" y="90" width="356" height="64" toolTip="主角回话"/>
+	<s:Label x="8" y="179" text="引导"/>
+	<s:TextInput id="gudeTxt0" x="39" y="176" width="29" toolTip="前往，去，向，等"/>
+	<s:TextInput id="gudeTxt1" x="75" y="176" width="120" toolTip="目的地"/>
+	<s:TextInput id="gudeTxt2" x="203" y="177" width="29" toolTip="找，击杀，采摘等"/>
+	<s:TextInput id="gudeTxt3" x="240" y="178" width="94" toolTip="目标npc或者怪物"/>
+	<s:Label x="10" y="202" text="id" toolTip="数据为npcId或者坐标例如: 100  坐标以数组形式保存 [200,300]"/>
+	<s:TextInput id="relativeIdTxt" x="39" y="200" width="50" text="0"
+				 toolTip="数据为npcId或者坐标例如: 100  坐标以数组形式保存 [200,300]"/>
+	<s:Label x="109" y="205" text="坐标"/>
+	<s:TextInput id="xTxt" x="141" y="202" width="32" text="0"/>
+	<s:TextInput id="yTxt" x="181" y="202" width="32" text="0"/>
+	<s:Label x="41" y="160" color="#000507" text="前往"/>
+	<s:Label x="112" y="160" color="#00FFFF" text="夕阳镇"/>
+	<s:Label x="208" y="162" text="找"/>
+	<s:Label x="5" y="160" color="#EF1515" text="例如:"/>
+	<s:Label x="258" y="162" color="#00FF00" text="萧婶砷"/>
+</s:BorderContainer>

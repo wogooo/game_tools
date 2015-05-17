@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009"
+					   xmlns:s="library://ns.adobe.com/flex/spark"
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   width="339" height="127" creationComplete="init(event)">
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.YFFramework.air.FileUtil;
+			import com.YFFramework.core.net.loader.image_swf.UILoader;
+			import com.YFFramework.core.utils.UtilString;
+			
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			import mx.graphics.codec.PNGEncoder;
+			
+			private var _storeFile:File=File.desktopDirectory;
+			
+			private var _fileName:String;
+			//角色人物
+			private var  _isRole:Boolean;
+			//坐骑
+			private var _isMount:Boolean;
+			//打坐
+			private var _isSitRole:Boolean;
+
+			protected function init(event:FlexEvent):void
+			{
+				// TODO Auto-generated method stub
+				///托物体进来 
+				addEventListener(NativeDragEvent.NATIVE_DRAG_DROP,onDragDrop);
+				addEventListener(NativeDragEvent.NATIVE_DRAG_ENTER,onDragDrop);
+			}
+			private function onDragDrop(e:NativeDragEvent):void
+			{
+				//将拖入的文件以数组形式获得，指定拖入的数据是文件数组形式
+				var files:Array = e.clipboard.getData(ClipboardFormats.FILE_LIST_FORMAT) as Array;
+				//获得拖入的第一个文件
+				var file:File = File(files[0]);
+				switch(e.type)
+				{				
+					case NativeDragEvent.NATIVE_DRAG_ENTER:  
+						if(file.type==".swf")
+							NativeDragManager.acceptDragDrop(this);
+						break;
+					case NativeDragEvent.NATIVE_DRAG_DROP:
+						_storeFile=file.parent;
+						_fileName=UtilString.getExactName(file.url);
+						_storeFile=FileUtil.createDirectory(_storeFile.url+"/"+_fileName); 
+						openFile(file.url);
+						_isRole=isRole(role.mouseX,role.mouseY);
+						if(!_isRole) _isMount=isMount(mount.mouseX,mount.mouseY);
+						if(!_isMount) _isSitRole=isSitRole(sit.mouseX,sit.mouseY);
+						break;
+				}
+			}  
+			private function openFile(url:String):void
+			{
+				var loader:UILoader=new UILoader();
+				loader.loadCompleteCallback=callBack;
+				loader.initData(url);
+			}
+			
+			private function callBack(content:DisplayObject,obj:Object):void
+			{
+				var _mc:MovieClip=content as MovieClip;
+				var pngFileArr:Vector.<BitmapDataName>//
+				if(_isRole) pngFileArr=CovertFileManager.convertSWFToPNGSequence(_mc,_isRole);
+				else if(_isMount)pngFileArr=CovertFileManager.converMountSWFToPNGSequence(_mc);
+					///当为坐骑文件时 
+				else if(_isSitRole) pngFileArr=CovertFileManager.convertSitSWF(_mc);
+				else  pngFileArr=CovertFileManager.convertSWFToPNGSequence(_mc,false);
+				var code:PNGEncoder=new PNGEncoder();
+				var name:String;
+				var bytes:ByteArray;
+				for each (var data:BitmapDataName in pngFileArr)
+				{
+					///当为角色文件
+					name=data.name;
+					//生成文件
+					bytes=code.encode(data);
+					FileUtil.createFileByByteArray(_storeFile,name+".png",bytes);
+				}
+				
+				Alert.show("文件生成完成!");
+				role.alpha=0.1;
+				mount.alpha=0.1;
+				sit.alpha=0.1;
+				_isRole=false;
+				_isMount=false;
+				
+				
+			}
+			
+			/**是否为主角是
+			 */ 
+			private function isRole(px:int,py:int):Boolean
+			{
+				if(role.getRect(role).contains(px,py))
+				{
+					role.alpha=1
+					return true;
+				}
+				return false;
+			}
+			
+			
+			/**是否为 坐骑
+			 */ 	
+			private function isMount(px:int,py:int):Boolean
+			{
+				if(mount.getRect(mount).contains(px,py))
+				{
+					mount.alpha=1
+					return true;
+				}
+				return false;
+			}
+
+			/**是否为 打坐 
+			 */ 
+			private function isSitRole(px:int,py:int):Boolean
+			{
+				if(sit.getRect(sit).contains(px,py))
+				{
+					sit.alpha=1
+					return true;
+				}
+				return false;
+			}
+
+
+			
+		]]>
+	</fx:Script>
+	<s:Button id="role" x="10" y="34" width="98" height="63" label="主人物" alpha="0.1"
+			  chromeColor="#0DC4E5" />
+	<s:Button id="mount" x="115" y="34" width="98" height="63" label="坐骑" alpha="0.1"
+			  chromeColor="#0DC4E5" />
+	<s:Button id="sit" x="225" y="34" width="98" height="63" label="打坐" alpha="0.1"
+			  chromeColor="#0DC4E5" />
+	<s:Label x="27" y="10" color="#F41919" text="楚汉资源转化器"/>
+</s:WindowedApplication>

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:BorderContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" width="376" height="54" backgroundColor="0x999999">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.YFFramework.core.event.YFEventCenter;
+			
+			public static const Upper:String="Upper";
+			public static const Down:String="Down";
+			public var file:File
+			protected function click(event:MouseEvent):void
+			{
+				switch(event.currentTarget)
+				{
+					case upBtn:
+						YFEventCenter.Instance.dispatchEventWith(Upper,file);
+						break;
+					case downBtn:
+						YFEventCenter.Instance.dispatchEventWith(Down,file);
+						break;
+				}
+			}
+			public function updateView():void
+			{
+				txt.text=file.nativePath;
+			}
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<s:TextInput id="txt" x="10" y="22" width="305"/>
+	<s:Button id="upBtn" x="324" y="10" width="33" label="上" click="click(event)"/>
+	<s:Button id="downBtn" x="324" y="31" width="32" label="下" click="click(event)"/>
+</s:BorderContainer>

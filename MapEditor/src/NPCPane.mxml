@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:BorderContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				   xmlns:s="library://ns.adobe.com/flex/spark" 
+				   xmlns:mx="library://ns.adobe.com/flex/mx" width="304" height="202"
+				   creationComplete="initUI(event)"
+				   >
+	
+	<fx:Script>
+		<![CDATA[
+			import com.YFFramework.core.event.YFEventCenter;
+			
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			
+			/**创建npc 
+			 */ 
+			public static const ImportNPC:String="NPCCreator";
+			
+			///导入npc
+			private var _importNPCFile:File=File.desktopDirectory;
+			
+			
+			protected function initUI(event:FlexEvent):void
+			{
+				_importNPCFile.addEventListener(Event.SELECT,onFileSelect);
+			}
+			private function onFileSelect(e:Event):void
+			{
+				pathTxt.text=_importNPCFile.url;
+			}
+
+			
+			protected function click(e:MouseEvent):void
+			{
+				switch(e.currentTarget)
+				{
+					case browseBtn:
+						//浏览 
+						var npcdFilters:FileFilter=new FileFilter("chitu", "*.chitu");
+						_importNPCFile.browse([npcdFilters]);
+						break;
+					case okBtn:
+						YFEventCenter.Instance.dispatchEventWith(ImportNPC,{id:idTxt.text,url:pathTxt.text,name:_importNPCFile.name,file:_importNPCFile});
+						dispose();
+						break;
+					case cancelBtn:
+						dispose();
+						break;
+				}
+			}
+			
+			private function dispose():void
+			{
+				removeAllElements();
+				PopUpManager.removePopUp(this);
+			}
+			
+		
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<s:Label x="26" y="25" color="#FD0202" text="NPC设定"/>
+	<s:Label x="40" y="74" color="#EE0606" fontSize="18" text="id"/>
+	<s:Label x="35" y="118" color="#F20909" fontFamily="Arial" fontSize="18" text="地址"/>
+	<s:TextInput id="idTxt" x="78" y="71" toolTip="npc id,大小最好是在 1--1000之间 "/>
+	<s:TextInput id="pathTxt" x="79" y="118"/>
+	<s:Button id="okBtn" x="57" y="169" label="确定" click="click(event)"/>
+	<s:Button id="cancelBtn" x="145" y="168" label="取消" click="click(event)"/>
+	<s:Button id="browseBtn" x="219" y="119" width="45" label="浏览"
+			  click="click(event)"/>
+</s:BorderContainer>

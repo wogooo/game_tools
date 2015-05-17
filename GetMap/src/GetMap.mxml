@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009"
+					   xmlns:s="library://ns.adobe.com/flex/spark"
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   width="429" height="157" creationComplete="init(event)"
+					   >
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.YFFramework.core.event.EventCenter;
+			import com.YFFramework.core.event.ParamEvent;
+			import com.YFFramework.core.utils.StringUtil;
+			
+			import mx.events.FlexEvent;
+			
+			
+			
+			
+			protected function onClicik(event:MouseEvent):void
+			{
+				var _mapW:int=int(mapW.text);
+				var _mapH:int=int(mapH.text);
+				var _sliceW:int=int(sliceW.text);
+				var _sliceH:int=int(sliceH.text);
+				var _root:String=path.text;
+				var _fromZero:Boolean=checkBox.selected;
+				var _pre:String=picPre.text;
+				if(StringUtil.trim(_root)==""||_mapW==0||_mapH==0) return ;
+				MapGetManager.getMap(_mapW,_mapH,_sliceW,_sliceH,_root,_pre,_fromZero,row_column.selected);
+			}
+			
+			protected function init(event:FlexEvent):void
+			{
+				EventCenter.Instance.addEventListener(ProgressEvent.PROGRESS,onProgress);
+			}
+			private function onProgress(e:ParamEvent):void
+			{
+				progressInfo.text=String(e.param);
+			}
+			
+			
+		]]>
+	</fx:Script>
+	<s:Label x="10" y="36" text="地图宽"/>
+	<s:Label x="150" y="41" text="地图高"/>
+	<s:Label x="11" y="19" text="根地址 "/>
+	<s:TextInput id="path" x="64" y="11" width="355"/>
+	<s:TextInput id="mapW" x="61" y="36" width="84" height="21" enabled="true"/>
+	<s:TextInput id="mapH" x="187" y="35" width="80"/>
+	<s:Label x="10" y="67" text="图片前缀"/>
+	<s:TextInput id="picPre" x="61" y="65" width="84" text=""/>
+	<s:Label x="153" y="65" height="22" text="切片宽"/>
+	<s:Label x="276" y="70" width="44" text="切片高"/>
+	<s:TextInput id="sliceW" x="201" y="65" width="70" text="300"/>
+	<s:TextInput id="sliceH" x="323" y="65" width="71" text="300"/>
+	<s:CheckBox id="checkBox" x="283" y="39" label="从0开始" selected="true"/>
+	<s:Button x="15" y="110" label="获取" click="onClicik(event)"/>
+	<s:TextInput x="126" y="111" id="progressInfo" width="293" enabled="false" mouseChildren="false"/>
+	<s:CheckBox id="row_column" x="365" y="41" label="行_列" selected="true"/>
+</s:WindowedApplication>

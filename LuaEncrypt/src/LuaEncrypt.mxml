@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009"
+					   xmlns:s="library://ns.adobe.com/flex/spark"
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   width="282" height="196" initialize="init(event)">
+	<fx:Script>
+		<![CDATA[
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			import mx.managers.DragManager;
+			
+			private static const Suffix:String =".abc"
+			protected function init(event:FlexEvent):void
+			{
+				this.addEventListener(NativeDragEvent.NATIVE_DRAG_ENTER,onDragEvent);
+				this.addEventListener(NativeDragEvent.NATIVE_DRAG_DROP,onDragEvent);
+			}
+			
+			protected function onDragEvent(event:NativeDragEvent):void
+			{
+				var dropfiles:Array= event.clipboard.getData(ClipboardFormats.FILE_LIST_FORMAT) as Array;
+				var file:File = dropfiles[0];
+				
+				switch(event.type)
+				{
+					case NativeDragEvent.NATIVE_DRAG_ENTER:
+						if (abcId.selected)
+						{
+							if (file.type ==Suffix||file.isDirectory)
+								DragManager.acceptDragDrop(this);
+						}
+						else
+						{
+							if (file.type ==".lua"||file.isDirectory)
+								DragManager.acceptDragDrop(this);
+						}
+						break;
+					case NativeDragEvent.NATIVE_DRAG_DROP:
+						if (abcId.selected)
+						{
+							if (file.type ==Suffix)
+							{
+								deleteFile(file,true);
+							}
+							else if (file.isDirectory)
+							{
+								deleteDir(file);
+								Alert.show("加密文件删除完成");
+							}
+						}
+						else
+						{
+							if (file.type ==".lua")
+							{
+								readFile(file,luaDelete.selected,true);
+							}
+							else if (file.isDirectory)
+							{
+								readDir(file);
+								Alert.show("加密文件生成完成");
+							}
+						}
+						break;
+				}
+			}
+			
+			private function deleteFile(file:File,alert:Boolean=true):void
+			{
+				file.moveToTrashAsync();
+				if (alert)
+				{
+					Alert.show("加密文件删除完成");
+				}
+			}
+			private function deleteDir(file:File):void
+			{
+				var arr:Array=file.getDirectoryListing();
+				for each (var file:File in arr)
+				{
+					if (file.isDirectory )
+					{
+						deleteDir(file)
+					}
+					else if (file.type ==Suffix)
+					{
+						deleteFile(file,false)
+					}
+				}
+			}
+
+			
+			protected function readDir(file:File):void
+			{
+				var arr:Array=file.getDirectoryListing();
+				for each (var file:File in arr)
+				{
+					if (file.isDirectory )
+					{
+						readDir(file)
+					}
+					else if (file.type ==".lua")
+					{
+						readFile(file,luaDelete.selected,false)
+					}
+				}
+			}			
+			protected function readFile(file:File,deleteLua:Boolean,alert:Boolean=true):void
+			{
+				var url:String = file.url;
+				var fileStream:FileStream= new FileStream();
+				fileStream.open(file,FileMode.READ);
+				var bytes:ByteArray=new ByteArray();
+				fileStream.readBytes(bytes,0,fileStream.bytesAvailable);
+				fileStream.close();
+				
+				var dir:File=file.parent;
+				var fileName:String =file.name;
+				fileName = fileName.substr(0,fileName.length - 4) ;// .lua
+				
+				fileName =fileName + Suffix;
+				
+				var totalBytes:ByteArray = new ByteArray();
+				totalBytes.writeInt(bytes.length);
+				totalBytes.writeBytes(bytes,0,bytes.length);
+				totalBytes.compress();
+				
+				var saveAbcFile:File=File.desktopDirectory;
+				saveAbcFile.url =dir.url+"/" +fileName;
+				if(!saveAbcFile.exists)
+				{
+					saveAbcFile = dir.resolvePath(fileName);
+				}
+
+				saveFile(totalBytes,saveAbcFile);
+				
+				if (alert)
+				{
+					Alert.show("加密文件生成完成");
+				}
+				if (deleteLua)
+				{
+					file.moveToTrashAsync();
+				}
+				
+				 
+			}
+			
+			
+			private function saveFile(bytes:ByteArray,file:File):void
+			{
+				var fileStream:FileStream= new FileStream();
+				fileStream.open(file,FileMode.WRITE);
+				fileStream.position=0;
+				fileStream.writeBytes(bytes,0,bytes.length);
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<s:Label x="5" y="69" fontSize="25" text="拖入lua文件或lua文件夹"/>
+	<s:Label x="10" y="20" color="#F02424" fontSize="20" text="lua加密"/>
+	<s:CheckBox id="luaDelete" x="84" y="20" label="删除lua"/>
+	<s:CheckBox id="abcId" x="182" y="24" label="删除加密文件" toolTip="只进行文件删除操作"/>
+</s:WindowedApplication>

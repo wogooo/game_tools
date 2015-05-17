@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:BorderContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				   xmlns:s="library://ns.adobe.com/flex/spark" 
+				   xmlns:mx="library://ns.adobe.com/flex/mx" width="244" height="124" backgroundColor="#FFFFFF">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.YFFramework.core.event.EventCenter;
+			import com.YFFramework.core.event.ParamEvent;
+			
+			import mx.managers.PopUpManager;
+			
+			public static const CreateMonsterType:String="CreateMonsterType";
+			protected function onClick(event:MouseEvent):void
+			{
+				
+				switch(event.currentTarget)
+				{
+					case okBtn:
+						var data:int=int(txt.text)
+						EventCenter.Instance.dispatchEvent(new ParamEvent(CreateMonsterType,data));
+						dispose();
+						break;
+					case cancelBtn:
+						dispose();
+						break;
+				}
+			}
+			
+			private function dispose():void
+			{
+				PopUpManager.removePopUp(this);
+				removeAllElements();
+			}
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<s:Label x="25" y="47" text="怪物id"/>
+	<s:TextInput id="txt" x="90" y="47" restrict="0-9"/>
+	<s:Button id="okBtn" x="25" y="91" label="确定" click="onClick(event)"/>
+	<s:Button id="cancelBtn" x="127" y="91" label="取消" click="onClick(event)"/>
+</s:BorderContainer>

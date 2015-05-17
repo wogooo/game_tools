@@ -1,0 +1,1428 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009"
+					   xmlns:s="library://ns.adobe.com/flex/spark"
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   xmlns:flex="com.YFFramework.air.flex.*"
+					   xmlns:component="component.*"
+					   xmlns:ns1="*"
+					   width="930" height="692" applicationComplete="initApp(event)" >
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<fx:Script> 
+		<![CDATA[
+			import com.YFFramework.air.FileUtil;
+			import com.YFFramework.air.flex.FlexUI;
+			import com.YFFramework.core.center.manager.update.TimeOut;
+			import com.YFFramework.core.center.manager.update.UpdateManager;
+			import com.YFFramework.core.debug.print;
+			import com.YFFramework.core.event.EventCenter;
+			import com.YFFramework.core.event.YFEvent;
+			import com.YFFramework.core.event.YFEventCenter;
+			import com.YFFramework.core.net.loader.file.FileLoader;
+			import com.YFFramework.core.net.loader.image_swf.BytesLoader;
+			import com.YFFramework.core.proxy.StageProxy;
+			import com.YFFramework.core.ui.yf2d.data.YF2dActionData;
+			import com.YFFramework.core.utils.StringUtil;
+			import com.YFFramework.core.utils.UtilString;
+			import com.YFFramework.core.utils.image.BitmapDataUtil;
+			import com.YFFramework.core.utils.image.advanced.encoder.JPGEncoder;
+			import com.YFFramework.core.utils.image.advanced.encoder.PNGEncoder;
+			
+			import component.ExportPane;
+			import component.FiliterPane;
+			import component.ProgressUI;
+			import component.RolePlayer;
+			
+			import cursor.CursorModule;
+			
+			import events.ParamEvent;
+			
+			import manager.ActionData;
+			import manager.AndroidDataManager;
+			import manager.BitmapDataEx;
+			import manager.DuoluoPngManager;
+			import manager.ExportPngManager;
+			import manager.FileActionDataUtil;
+			import manager.FileGenerator;
+			import manager.HswfAnalysse;
+			import manager.SizeManager;
+			import manager.UV.ActionContainer;
+			import manager.UV.GpuFileGenerator;
+			import manager.UV.PositionUtil;
+			import manager.UV.YFDataManager;
+			import manager.yf2dForBitmapUtil;
+			
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			import mx.events.ListEvent;
+			import mx.managers.PopUpManager;
+			
+			import net.BytesObjectLoad;
+			import net.MoviePicLoader;
+			
+			import spark.components.Group;
+			import spark.components.Image;
+			import spark.events.TextOperationEvent;
+			import spark.filters.GlowFilter;
+			
+			import type.TypeBlood;
+			import type.TypeFile;
+			import type.TypeRoleDeep;
+			import type.TypeRoleShow;
+			
+			import utils.ActionUtil;
+			import utils.ImageAlphaUtil;
+			import utils.MovieDictUtil;
+			
+			private var xml:XML;
+			private var rolePlayer:RolePlayer;
+			
+			///参照宠物 一
+			private var refRole:RolePlayer;
+			private var refRole2:RolePlayer;
+			// 参照宠物2 
+			
+			//拖入的类型    1  主宠  2  副一  3  副二
+			public static const TypeMainRole:int=1;
+			public static const TypeRefRole:int=2;
+			public static const TypeRefRole2:int=3;
+			private var roleType:int;
+			
+			private var dir:String="file:///C:/Users/XW146/Desktop/";
+			private var dirName:String;//目录名称
+			private var actionData:ActionData;
+			
+			private var bgFile:File=File.desktopDirectory;
+			private var saveFile:File=File.desktopDirectory;
+			///保存. ActionData文件
+			private var actionDataSaveFile:File=File.desktopDirectory;
+			/// 保存  android 文件 .ad
+			private var androidDataSaveFile:File=File.desktopDirectory;
+			//导出png 
+			private var pngExportFile:File=File.desktopDirectory;
+			
+			//导出 flash_UV数据  和图片
+//			private var flashUVSaveFile:File=File.desktopDirectory;
+			
+			
+			//保存打开的文件的名称
+			private var openFileName:String;
+			private var openFileDir:File=File.desktopDirectory;
+			private var openFileNameSub:String;//文件的后缀名
+			//人物引点坐标
+			private var roleBasePoint:Point;
+			
+			private  var progress:ProgressUI;
+			
+			//展示UV需要的 数据
+			private var _uvDict:Dictionary;
+			// UV时候 需要的承载 容器   flex里面 要想获取  对象的 bitmapData 数据 必须先将其显示出来才能取像素
+			private var _uvContainer:Group=new Group();
+			protected function initApp(event:FlexEvent):void
+			{
+				stage.frameRate=70;
+				roleType=TypeMainRole;
+				initUI();
+				addEventListener(NativeDragEvent.NATIVE_DRAG_DROP,onDragDrop);
+				addEventListener(NativeDragEvent.NATIVE_DRAG_ENTER,onDragDrop);
+				NativeApplication.nativeApplication.addEventListener(InvokeEvent.INVOKE, onInvoke); ///双击文件打开
+				bgFile.addEventListener(Event.SELECT,onFileHanlder);
+				////处理混合模式
+				YFEventCenter.Instance.addEventListener(ParamEvent.BlenderModeChange,onBlenderModeChange);
+				
+				StageProxy.Instance.configure(stage);
+			//	EventCenter.Instance.dispatchEvent(new Event("stageInit"));
+				YFEventCenter.Instance.dispatchEventWith("stageInit");
+				addEventListener(MouseEvent.MOUSE_DOWN,onMouseEvent);
+				StageProxy.Instance.stage.addEventListener(MouseEvent.MOUSE_UP,onMouseEvent);
+				///actionData文件解析完成触发
+				YFEventCenter.Instance.addEventListener(FileActionDataUtil.ActionDataComplete,onActionDataComplete);
+				///  ad  文件解析完成
+				YFEventCenter.Instance.addEventListener(AndroidDataManager.AndroidDataComplete,onAndroidDataComplete);
+				//解析 yf 文件 
+				YFEventCenter.Instance.addEventListener(YFDataManager.YFDataComplete,onYFDataComplete);
+				
+				///伟哥的资源文件解析完成
+				YFEventCenter.Instance.addEventListener(DuoluoPngManager.DuoluoPngComplete,onDuoleComplete);
+				///删除动作
+				YFEventCenter.Instance.addEventListener(FrameRatePane.DeleteAction,onDeleteAction);
+
+				///处理滤镜信息
+				
+				YFEventCenter.Instance.addEventListener(FiliterPane.FilterChange,onFilterChange);
+				YFEventCenter.Instance.addEventListener(FiliterPane.DisableFilter,onFilterDisable);
+				var cursorModule:CursorModule=new CursorModule();
+				lockHero_clickHandler();
+			}
+			private function onDeleteAction(e:YFEvent):void
+			{
+				var action:int=int(e.param);
+				if(actionData)
+				{
+					actionData.deleteAction(action);
+					roleType=TypeMainRole;
+					actionDataInit(actionData,false);
+				}
+			}
+			private function onFilterDisable(e:YFEvent):void
+			{
+				rolePlayer.filters=[];
+			}
+			/**处理滤镜 
+			 */ 
+			private function onFilterChange(e:YFEvent):void
+			{
+				var data1:Object=e.param.data1;
+				var data2:Object=e.param.data2;
+				
+				if(actionData)
+				{
+					if(filterPane.filterUse)
+					{
+						actionData.headerData["filters"]=true;
+						actionData.headerData["filter1"]=data1;
+						actionData.headerData["filter2"]=data2;
+						var filter1:GlowFilter=RolePlayer.createFilter(data1);
+						var filter2:GlowFilter=RolePlayer.createFilter(data2);
+						rolePlayer.filters=[filter1,filter2];
+//						rolePlayer.filters=[filter1];//,filter2];
+
+					}
+					else 
+					{
+						rolePlayer.filters=[];
+						actionData.headerData["filters"]=false;
+						actionData.headerData["filter1"]=null;
+						actionData.headerData["filter2"]=null;
+						delete actionData.headerData["filter1"];
+						delete actionData.headerData["filter2"];
+						
+					}
+				}
+
+			}
+			
+			/**设置主角的混合模式
+			 */ 
+			private function onBlenderModeChange(e:YFEvent):void
+			{
+				var mode:String=e.param.toString();
+				rolePlayer.blendMode=mode;
+			}
+
+			private function onInvoke(e:InvokeEvent):void
+			{
+				var arr:Array=e.arguments;
+				if(arr.length>0)
+				{
+					roleType=TypeMainRole;
+					var url:String=arr[0];
+					var index:int=url.lastIndexOf("\\");
+					
+					openFileName=url.substr(index+1);
+
+					trace("--",openFileName);
+					index=openFileName.indexOf(".");
+					
+					openFileNameSub=openFileName.substr(index);
+					openFileName=openFileName.substring(0,index);//保存打开的文件的名称
+					trace("--",openFileName);
+					
+					var myF:File=File.desktopDirectory;
+					myF.nativePath=url;
+					openFileName=UtilString.getExactName(myF.name);
+					openFileDir=myF.parent;
+					openFile(url);
+				}
+			}
+			private function loadXml(url:String,dir:File):void
+			{
+				var fileLoader:FileLoader=new FileLoader();
+				fileLoader.loadCompleteCallBack=xmlLoaded
+				fileLoader.load(url,dir)
+			}
+			private function xmlLoaded(loader:FileLoader):void
+			{
+				var xml:XML=new XML(loader.data);
+				var file:File=loader.getTemData() as File;
+				
+				if(!followbtn.selected)  ///如果为伟哥的资源格式  则直接解析成ActionData
+				{
+					DuoluoPngManager.Instance.handleXML(xml,file);
+				}
+				else   ///坐骑马鞍 跟随点信息 
+				{
+					if(actionData)  ///如果存在ActionData则进行赋值，否则进行忽略
+					{
+						actionData.headerData["offsetData"]=DuoluoPngManager.Instance.convertXMLToJsonObject(xml);
+					}
+					updateOffsetDataView();
+				}
+			}
+			/**含有便宜点信息
+			 */ 
+			private function updateOffsetDataView():void
+			{
+				if(actionData)
+				{
+					if(actionData.hasOffsetData())
+					{
+						hasFollowInfoCheck.selected=true;
+					}
+					else hasFollowInfoCheck.selected=false;
+				}
+			}
+			private function openFile(url:String):void
+			{
+				var fileLoader:FileLoader=new FileLoader(URLLoaderDataFormat.BINARY);
+				fileLoader.loadCompleteCallBack=fileLoadComplete
+				fileLoader.load(url)
+					
+			}
+			private function fileLoadComplete(loader:FileLoader):void
+			{
+				var data:ByteArray=loader.data as ByteArray;
+				  
+				var bytesLoader:BytesLoader;
+				var domain:ApplicationDomain
+				if(openFileNameSub==TypeFile.FileExtention)
+				{
+					///打开tdxw文件 <.ct>
+					///解析
+					var time:Number=getTimer();
+					var dataObject:Object=FileGenerator.Instance.analyze(data);
+					var dif:Number=getTimer()-time;
+					trace("时间------::",dif);
+					var bytesLoad:BytesObjectLoad=new BytesObjectLoad();
+					bytesLoad.load(dataObject)
+					bytesLoad.loadCompleteCalback=bytesLoadComplete;
+				}
+				else if(openFileNameSub==TypeFile.HswfExtension)
+				{
+					////打开 hswf文件 	(.chitu)
+					var obj:Object=HswfAnalysse.analysse(data);
+					
+					tempActionData=new ActionData();
+					tempActionData.headerData=obj.headData;
+					bytesLoader=new BytesLoader();
+					bytesLoader.loadCompleteCalback=hswfLoad;
+					domain=new ApplicationDomain(ApplicationDomain.currentDomain);
+					bytesLoader.load(obj.swfBytes,domain);
+				}
+				else if(openFileNameSub==TypeFile.ActionDataExtension)  ///打开ActionData
+				{
+					FileActionDataUtil.analysseActionData(data,roleType);
+				}
+				else if(openFileNameSub==TypeFile.yf2dExtension)
+				{
+					////打开 yf2d件 	(.yf2d)
+					var yf2dObj:Object=yf2dForBitmapUtil.analysse(data);
+
+					tempActionData=new ActionData();
+					tempActionData.headerData=yf2dObj.headData;
+					bytesLoader=new BytesLoader();
+					bytesLoader.loadCompleteCalback=yf2dComplete;
+					domain=new ApplicationDomain(ApplicationDomain.currentDomain);
+					bytesLoader.load(yf2dObj.swfBytes,domain);
+				}
+				else if(openFileNameSub==TypeFile.AndroidExtention)  ///打开.ad文件
+				{
+					AndroidDataManager.analysseActionData(data,roleType);
+				}
+				else if(openFileNameSub==TypeFile.YFExtention)  //打开手游opengl文件
+				{
+					YFDataManager.analysseActionData(data,roleType);
+				}
+			}
+			
+			private function onActionDataComplete(e:YFEvent):void
+			{
+				var data:Object=e.param 
+				var actionData:ActionData=data.actionData;
+				actionDataInit(actionData);
+			}
+			/** android 文件播放完成
+			 */ 
+			private function onAndroidDataComplete(e:YFEvent):void
+			{
+				var data:Object=e.param 
+				var actionData:ActionData=data.actionData;
+				actionDataInit(actionData);
+			}
+			/**手游opengl文件
+			 */ 
+			private function onYFDataComplete(e:YFEvent):void
+			{
+				var data:Object=e.param 
+				var actionData:ActionData=data.actionData;
+				actionDataInit(actionData);
+			}
+			
+			
+			
+			/**多乐文件解析完成
+			 */
+			private function onDuoleComplete(e:YFEvent):void
+			{
+				var data:Object=e.param 
+				var duoleData:ActionData=data as ActionData;
+				if(repacebtn.selected&&this.actionData)	
+				{
+					actionData.replaceActionData(duoleData);
+					actionDataInit(actionData,false);
+				}
+				else
+				{
+					actionDataInit(duoleData);
+				}
+			}
+			
+			/** actionData完成
+			 * disposePre 动作替换时 是否替销毁前一个的数据
+			 */ 			
+			private function actionDataInit(tempActionData:ActionData,disposePre:Boolean=true):void
+			{
+				var filter1:GlowFilter;
+				var filter2:GlowFilter;
+
+				switch(roleType)
+				{
+					case TypeMainRole:
+						actionData=tempActionData;
+						rolePlayer.initData(actionData,disposePre);
+						if(actionData.headerData["blood"])
+						{
+							bloodComponent.x=actionData.headerData["blood"].x +roleBasePoint.x;
+							bloodComponent.y=actionData.headerData["blood"].y +roleBasePoint.y;
+						}
+						///版本
+						versionHeader.text=actionData.headerData["version"];
+						//渲染模式
+						if(actionData.headerData["blendMode"])blendModePane.setMode(actionData.headerData["blendMode"]);
+						if(actionData.headerData["skillRotate"])skillRotate.selected=true;
+						else skillRotate.selected=false;
+						///滤镜模式
+						if(actionData.headerData["filters"])
+						{
+							filter1=RolePlayer.createFilter(actionData.headerData["filter1"]);
+							filter2=RolePlayer.createFilter(actionData.headerData["filter2"]);
+							filterPane.setSelect(actionData.headerData["filter1"],actionData.headerData["filter2"]);
+						}
+						//是否是大翅膀坐骑
+						if(actionData.headerData["isWingMount"]!=null)
+						{
+							wingMount.selected=actionData.headerData["isWingMount"];
+						}
+						else wingMount.selected=false;
+						//判断循环次数
+						if(actionData.headerData["loopTime"]!=null)
+						{
+							skillLoop.text=int(actionData.headerData["loopTime"])+"";
+						}
+						else 
+						{
+							skillLoop.text="1";
+						}
+						initTree();
+						EventCenter.Instance.dispatchEvent(new ParamEvent(ParamEvent.RoleCreate));	
+						resetRolePlayerPosition();
+						updateOffsetDataView();
+						
+						actionDataSizePng.text=SizeManager.getPngSize(actionData)+"";
+						if(mohuCheckBox.selected)actionDataSizeJpg.text=SizeManager.getJpgSize(actionData)+"";
+						
+						_uvDict=doActionDataUV(_uvContainer);
+						break;
+					case TypeRefRole:
+						refRole.initData(tempActionData);
+						//渲染模式
+						if(tempActionData.headerData["blendMode"]) refRole.blendMode=tempActionData.headerData["blendMode"]
+						///滤镜模式
+						if(tempActionData.headerData["filters"])
+						{
+							filter1=RolePlayer.createFilter(tempActionData.headerData["filter1"]);
+							filter2=RolePlayer.createFilter(tempActionData.headerData["filter2"]);
+						}
+
+						EventCenter.Instance.dispatchEvent(new ParamEvent(ParamEvent.RefRoleCreate));
+						break;
+					case TypeRefRole2:
+						refRole2.initData(tempActionData);
+						/// 渲染模式
+						if(tempActionData.headerData["blendMode"]) refRole2.blendMode=tempActionData.headerData["blendMode"];
+						///滤镜模式
+						if(tempActionData.headerData["filters"])
+						{
+							filter1=RolePlayer.createFilter(tempActionData.headerData["filter1"]);
+							filter2=RolePlayer.createFilter(tempActionData.headerData["filter2"]);
+						}
+
+						EventCenter.Instance.dispatchEvent(new ParamEvent(ParamEvent.RefRole2Create));
+						break;
+				}
+				initMain();
+			}
+			
+			///临时保存 hswf的信息
+			private var tempActionData:ActionData;
+			
+			private function hswfLoad(loader:BytesLoader,domain:ApplicationDomain):void
+			{
+				//进出处理
+				HswfAnalysse.extractActionData(tempActionData,domain);
+				actionDataInit(tempActionData);
+			}
+			
+			private function yf2dComplete(loader:BytesLoader,domain:ApplicationDomain):void
+			{
+				//进出处理
+				yf2dForBitmapUtil.extractActionData(tempActionData,domain);
+				actionDataInit(tempActionData);
+			}
+			
+			private function bytesLoadComplete(loader:BytesObjectLoad):void
+			{
+				actionDataInit(loader.actionData);
+			}
+
+			private function initUI():void
+			{
+				//背景图片t
+				bgImage.source="assets/bg.jpg"
+				//人物引点 区域图片
+				roleBaseImage.source="assets/shadow.png";
+				roleBasePoint=new Point(656,474);
+				roleBaseImage.x=roleBasePoint.x;
+				roleBaseImage.y=roleBasePoint.y;
+				///创建副宠 一
+				refRole=createRolePlayer();
+				refRole.mouseEnabled=false;
+				///创建副宠二
+				refRole2=createRolePlayer();
+				refRole2.mouseEnabled=false;
+				///创建主角 
+				rolePlayer=createRolePlayer();
+				 
+				
+				addElement(bloodComponent);
+				progress=new ProgressUI();
+				
+				progress.x=300;
+				progress.y=300;
+			}
+			///创建角色
+			private function createRolePlayer():RolePlayer
+			{
+				var rolePlayer:RolePlayer=new RolePlayer();
+				roleContainer.addElement(rolePlayer);
+				rolePlayer.x=roleBaseImage.x//200;
+				rolePlayer.y=roleBaseImage.y;//200;
+				return rolePlayer;
+			}
+			private var isSet:Boolean=false;
+			private function initMain():void
+			{
+				roleType=TypeMainRole;
+				if(!isSet)
+				{
+					StageProxy.Instance.configure(stage);
+//					bloodComponent.addAction();
+					rolePlayer.addkeyBoardAction();
+					addEvents();
+					isSet=true;
+				}
+					playAll();	
+			}
+			private function addEvents():void
+			{
+				addEventListener(Event.ENTER_FRAME,onUpdate);
+				bloodPane.addEventListener(ParamEvent.Blood,onBlood);
+				bloodPane.addEventListener(ParamEvent.BloodPaneUpdate,onBloodPaneUpdate);
+				saveFile.addEventListener(Event.SELECT,onFileHanlder);
+				actionDataSaveFile.addEventListener(Event.SELECT,onFileHanlder);
+				androidDataSaveFile.addEventListener(Event.SELECT,onFileHanlder);
+				pngExportFile.addEventListener(Event.SELECT,onFileHanlder);
+				EventCenter.Instance.addEventListener(ParamEvent.FlushPlay,onParamEvent);
+				EventCenter.Instance.addEventListener(ParamEvent.DeleteFrame,onParamEvent);
+				EventCenter.Instance.addEventListener(ParamEvent.ExportFile,onExportFile);
+				rolePlayer.addEventListener(ParamEvent.RoleBeginPlay,onRolePlay);
+				rolePlayer.addEventListener(ParamEvent.RolePlay,onRolePlay);
+				rolePane.addEventListener(ParamEvent.ShowRoleInfo,onRoleInfo);
+				rolePane.addEventListener(ParamEvent.ShowRefRoleInfo,onRoleInfo);
+				rolePane.addEventListener(ParamEvent.ShowRefRoleInfo2,onRoleInfo);
+				rolePane.addEventListener(ParamEvent.ChangeRoleDeep,onRoleInfo);
+				
+			}
+			private function onRoleInfo(e:ParamEvent):void
+			{
+				var data:Object=e.data;
+				switch(e.type)
+				{
+					//副一
+					case ParamEvent.ShowRefRoleInfo:
+						if(data.type==TypeRoleShow.Pt)
+							refRole.registerUIVisible=data.select;
+						else if(data.type==TypeRoleShow.Frame)
+							refRole.frameUIVisible=data.select;
+						else  refRole.visible=data.select;
+						break;
+					//副二
+					case ParamEvent.ShowRefRoleInfo2:
+						if(data.type==TypeRoleShow.Pt)
+							refRole2.registerUIVisible=data.select;
+						else if(data.type==TypeRoleShow.Frame)
+							refRole2.frameUIVisible=data.select;
+						else refRole2.visible=data.select;
+						break;
+					case ParamEvent.ShowRoleInfo:
+						if(data.type==TypeRoleShow.Pt)
+							rolePlayer.registerUIVisible=data.select;
+						else if(data.type==TypeRoleShow.Frame)
+							rolePlayer.frameUIVisible=data.select;
+						else rolePlayer.visible=data.select;
+						break;
+					case ParamEvent.ChangeRoleDeep:
+						if(data==TypeRoleDeep.RolePlayer)
+							roleContainer.addElement(rolePlayer);
+						else if(data==TypeRoleDeep.RefRole)
+							roleContainer.addElement(refRole);
+						else 
+							roleContainer.addElement(refRole2);
+						break;
+				}
+			}
+			private function onDragDrop(e:NativeDragEvent):void
+			{
+				//将拖入的文件以数组形式获得，指定拖入的数据是文件数组形式
+				var files:Array = e.clipboard.getData(ClipboardFormats.FILE_LIST_FORMAT) as Array;
+				//获得拖入的第一个文件
+				var file:File = File(files[0]);
+				switch(e.type)
+				{				
+					case NativeDragEvent.NATIVE_DRAG_ENTER:  
+						if(file.isDirectory || file.type == TypeFile.FileExtention||file.type == TypeFile.HswfExtension||file.type == TypeFile.ActionDataExtension||file.type == TypeFile.yf2dExtension||file.type == TypeFile.AndroidExtention||file.type==TypeFile.YFExtention||file.type==".xml")
+							NativeDragManager.acceptDragDrop(this);
+						break;
+					case NativeDragEvent.NATIVE_DRAG_DROP:
+							
+						//当在副宠一参照物时
+						if(rolePane.getRefRoleButtonRect().contains(rolePane.mouseX,rolePane.mouseY))
+							roleType=TypeRefRole;
+						//副二
+						else if(rolePane.getRefRole2ButtonRect().contains(rolePane.mouseX,rolePane.mouseY))
+							roleType=TypeRefRole2;
+						else 
+						{ //主要的
+							roleType=TypeMainRole;
+						}
+						openFileName=file.name;
+						var index:int=openFileName.indexOf(".");
+						if(index!=-1)
+						{
+							openFileNameSub=openFileName.substr(index);
+							openFileName=openFileName.substring(0,index);//保存打开的文件的名称
+						}
+
+						
+						openFileDir=file.parent;
+						if(file.isDirectory)
+						{
+						
+							//处理原图片 file 
+							initLoad(file);
+						}
+						else
+						{
+						///处理二进制图片
+							var suffix:String=UtilString.getSuffix(file.url);
+							if(suffix!="xml")
+							{
+								openFile(file.url);
+							}
+							else 
+							{
+								loadXml(file.url,file.parent);
+							}
+						}
+						break;
+				}
+			}  
+			private function onRolePlay(e:ParamEvent):void
+			{
+				switch(e.type)				
+				{
+					case ParamEvent.RolePlay:
+						var data:BitmapDataEx=e.data as BitmapDataEx;
+						framePane.updateTitle(data,actionData);
+
+						break;
+					case ParamEvent.RoleBeginPlay:
+						var playArr:Vector.<BitmapDataEx>=e.data as Vector.<BitmapDataEx>;
+						framePane.updatePane(playArr);
+						break;
+				}
+			}
+			private function onParamEvent(e:ParamEvent):void
+			{
+				var data:BitmapDataEx=e.data as BitmapDataEx;
+				var obj:Object=MovieDictUtil.GetIndex(actionData,data);
+ 				switch(e.type)
+				{
+					case ParamEvent.FlushPlay:
+						break;
+					case ParamEvent.DeleteFrame:
+						MovieDictUtil.deleteBitmapDataEx(data,actionData);
+						break;
+				}
+				initPlay(obj.action,obj.direction,true);
+			}
+			private function onUpdate(e:Event):void
+			{
+				UpdateManager.Instance.update();
+			//	bloodPane.initData(bloodComponent.x-roleBasePoint.x,bloodComponent.y-roleBasePoint.y);
+			}
+			private function initLoad(dir:File):void
+			{
+				var urlArr:Vector.<String>=FileUtil.getPngList(dir);     
+				var loader:MoviePicLoader=new MoviePicLoader();
+				loader.load(urlArr);
+				loader.loadCompleteCallBack=loadComplete;  
+				loader.progressCallBack=progressCallBack
+				addElement(progress);
+			}  
+			private function progressCallBack(e:ProgressEvent,index:int,len:int):void
+			{
+				var percent:int=int((e.bytesLoaded/e.bytesTotal+index)/len*100)
+				progress.gotoAndStop(percent);
+			}
+			private function loadComplete(loader:MoviePicLoader):void
+			{
+				progress.reset();
+				if(progress.parent)	removeElement(progress);
+				switch(roleType)
+				{
+					case TypeMainRole:
+						if(actionData&&repacebtn.selected)  ///替换资源
+						{
+							actionData.replaceActionData(loader.actionData);
+							rolePlayer.initData(actionData,false);
+						}
+						else 
+						{
+							actionData=loader.actionData;
+							rolePlayer.initData(actionData,true);
+						}
+						rolePlayer.filters=[];
+						initTree();
+						EventCenter.Instance.dispatchEvent(new ParamEvent(ParamEvent.RoleCreate));	
+						resetRolePlayerPosition();
+						break;
+					case TypeRefRole:
+						refRole.initData(loader.actionData);
+						EventCenter.Instance.dispatchEvent(new ParamEvent(ParamEvent.RefRoleCreate));
+						break;
+					case TypeRefRole2:
+						refRole2.initData(loader.actionData);
+						EventCenter.Instance.dispatchEvent(new ParamEvent(ParamEvent.RefRole2Create));
+						break;
+				}
+				loader.remove();
+				initMain();
+			} 
+			
+			private function initTree():void
+			{
+				var actObj:Object;
+				var directObj:Object;
+				xml=<actions label="全部" value="-10"  />;/// -10值表示全部
+				var actionNode:XML;
+				var actionLabel:String;
+				var directionNode:XML;
+				var directionLabel:String;
+				for each  (var act:int in actionData.headerData["action"])
+				{
+					actionNode=<action />
+					actionLabel=ActionUtil.GetActionName(act);
+					actionNode.@label=actionLabel;
+					actionNode.@value=act;
+					for each(var direct:int in actionData.headerData[act]["direction"])
+					{
+						directionNode=<direction />;
+						directionLabel=ActionUtil.getDirectionName(direct);
+						directionNode.@label=directionLabel;
+						directionNode.@value=direct;
+						directionNode.@parentValue=act;
+						actionNode.appendChild(directionNode);
+					}
+					xml.appendChild(actionNode);
+				}
+				var root:XML=<root />
+				root.appendChild(xml);
+				xml=root;	
+
+				////添加血条  默认 血条位置 是在 0 0处
+				var bloodNode:XML=<blood label="血条" value="-20" />
+				xml.appendChild(bloodNode);
+				mTree.dataProvider=xml;
+		//		trace(xml);
+			}
+			
+			protected function itemClick(e:ListEvent):void
+			{
+				stage.focus=bloodComponent;
+				var obj:Object=mTree.selectedItem;
+				if(obj==null) return ;
+				var act:int
+				var direct:int;				
+				var actionName:String;
+				if(obj.@value==-10)
+				{
+					//全部  播放 第一个  
+					playAll();
+					frameRatePane.visible=false;
+				}
+				else if(obj.@value==-20)//血条
+				{
+					bloodComponent.visible=true;
+					return ;//
+				}
+				else if(obj.hasOwnProperty("@parentValue"))  //当为方向时
+				{
+					act=int(obj.@parentValue);
+					direct=int(obj.@value);
+					initPlay(act,direct,true);
+					frameRatePane.visible=false;
+				}
+				else //当为动作时 
+				{
+					act=int(obj.@value);
+					initPlay(act,-1,true);
+					actionName=ActionUtil.GetActionName(act);
+					frameRatePane.updateTitle(actionName);
+					frameRatePane.initData(actionData.headerData,act);
+					resetFrameRatePane();
+				}
+				
+			}
+			///播放所有的东西
+			private function playAll():void
+			{
+				var loopTime:int=int(skillLoop.text);
+				if(loopTime==0)loopTime=1;
+				skillLoop.text=loopTime+"";
+
+				if(refRole.actionData||refRole2.actionData)
+				{
+					loopTime=0;
+				}
+				rolePlayer.playAll(loopTime);
+				refRole.playAll(loopTime);
+				refRole2.playAll(loopTime);
+				frameRatePane.visible=false;
+			}
+			private function initPlay(action:int,direction:int=-1,loop:Boolean=true):void
+			{
+				if(direction>-1)
+				{
+					rolePlayer.playDirection(action,direction,loop);
+					refRole.playDirection(action,direction,loop);
+					refRole2.playDirection(action,direction,loop);
+				}
+				else 
+				{
+					rolePlayer.playAction(action,loop);
+					refRole.playAction(action,loop);
+					refRole2.playAction(action,loop);
+				}
+			}
+			private function resetFrameRatePane():void
+			{
+				if(frameRatePane.visible==false)
+				{
+				//	frameRatePane.x=406;
+				//	frameRatePane.y=10;
+					frameRatePane.visible=true;
+				}
+			}
+			//显示血条
+			private function onBlood(e:ParamEvent):void
+			{
+				switch(e.data)
+				{
+					case TypeBlood.BloodShow:
+						bloodComponent.visible=true;
+						break;
+					case TypeBlood.BloodHide:
+						bloodComponent.visible=false;
+						break;
+						
+				}      
+			}
+			private function onBloodPaneUpdate(e:ParamEvent):void
+			{
+				var data:Object=e.data;
+				bloodComponent.x=data.x+roleBasePoint.x
+				bloodComponent.y=data.y+roleBasePoint.y;
+			}
+			protected function buttonClick(event:MouseEvent):void
+			{
+				switch(event.currentTarget)
+				{
+					case changeBgBtn:
+						var filter:FileFilter=new FileFilter("image;*.jpg;*.gif;*.png","*.jpg;*.gif;*.png");
+						bgFile.browse([filter]);
+					case preBtn:
+						rolePlayer.prePlay();
+						refRole.prePlay();
+						refRole2.prePlay();
+						stopBtn.label="播放"
+						break;
+					case nextBtn:
+						rolePlayer.nextPlay();
+						refRole.nextPlay();
+						refRole2.nextPlay();
+						stopBtn.label="播放"
+						break;
+					case stopBtn:
+						if(stopBtn.label=="播放")
+						{
+							var loopTime:int=int(skillLoop.text);
+							if(loopTime==0)loopTime=1;
+							skillLoop.text=loopTime+"";
+							rolePlayer.continuePlay(loopTime);
+							refRole.continuePlay(loopTime);
+							refRole2.continuePlay(loopTime);
+							stopBtn.label="暂停"
+						}
+						else 
+						{
+							stopBtn.label="播放"
+							rolePlayer.stop();
+							refRole.stop();
+							refRole2.stop();
+						}
+						break;
+					case exportBtn:
+						var exportPane:ExportPane=new ExportPane();
+						PopUpManager.addPopUp(exportPane,this,true);
+						PopUpManager.centerPopUp(exportPane);
+						break;
+					case actionDataBtn:   ///生成ActionData文件
+						actionDataSaveFile.browseForSave("保存");
+						break;
+					case androidBtn:
+						androidDataSaveFile.browseForSave("保存");
+						break;
+					case exportPng:
+//						pngExportFile.browseForDirectory(" 选择存储目录");
+						saveChitu();
+						break;
+					case uv_flashBtn:  // flash  UV输出		flash平台
+						if(actionData)
+						{
+							saveUV_FlashData();
+						}
+						break;
+					case uv_jsonBtn:	// json   UV输出    其他能够读取 json 的平台    比如手游
+						if(actionData)
+						{
+							saveForJson();
+						}
+						break;
+					case yfBtn:   // yf 文件 for mobile cocos2d-x 
+						if(actionData)
+						{
+							saveForYFData();
+						}
+						break;
+					//选取颜色
+					case colorSelectBtn:
+						Mouse.cursor="select";
+						break;
+				}
+			}
+			
+			
+			private function saveChitu():void
+			{
+				openFileName
+				var chituSaveName:String=openFileName+"_chitu";
+				trace("pngExportFile",pngExportFile.url,"name",openFileName);
+				fillActionDataInfo();
+				ExportPngManager.doExport(openFileDir,actionData,chituSaveName);
+				resetRolePlayerPosition();
+				Alert.show("生成完成");
+			}
+			
+			/**设置 UV
+			 */ 
+			private function doActionDataUV(container:Group):Dictionary
+			{
+				container.removeAllElements();
+				var myDict:Dictionary=new Dictionary();
+				var actDict:Dictionary;
+				var actionContainer:ActionContainer;
+				var header:Object =GpuFileGenerator.createJsonHeadForJS(actionData);
+				for each(var action:int in actionData.getActionArr())
+				{
+					actDict=new Dictionary();
+					myDict[action]=actDict;
+					for each(var direction:int in actionData.getDirectionArr(action) )
+					{
+						actionContainer=new ActionContainer();
+						PositionUtil.positionActionDataAuto2(header,actionData,action,direction,actionContainer);
+						actDict[direction]=actionContainer;
+						container.addElement(actionContainer);
+					}
+				}
+				return myDict;
+			}
+			/**保存flash UV数据
+			 */ 
+			private function saveUV_FlashData():void
+			{
+				addElement(_uvContainer);
+				/// flex的像素拷贝必须要延时    ,要不然 就会拷贝 不了 像素 
+				var time:TimeOut=new TimeOut(2000,saveFlashUV);
+				time.start();
+
+			}
+			private function saveFlashUV(obj:Object):void
+			{
+				fillActionDataInfo();
+				var bitmapDataArr:Array=[]; 
+				var yfData:YF2dActionData=GpuFileGenerator.createYF2dData(actionData.headerData,_uvDict,bitmapDataArr);
+				var fileName:String=openFileName;
+				fileName +="_s";
+				var header:ByteArray=GpuFileGenerator.createyf2DHead(yfData);
+				FileUtil.createFileByByteArray(openFileDir,fileName+TypeFile.yf2dHeadExtension,header);
+				//// 分解  
+				var len:int=bitmapDataArr.length;
+				var coder:PNGEncoder=new PNGEncoder();
+				var name:String;
+				var alphaname:String;
+				
+				var jpgCoder:JPGEncoder=new JPGEncoder();
+				for(var i:int=0;i!=len;++i)
+				{
+					name=bitmapDataArr[i].name;
+					var pngBytes:ByteArray=coder.encode(bitmapDataArr[i].data);
+					FileUtil.createFileByByteArray(openFileDir,fileName+"/"+name+".png",pngBytes);
+					
+					if(uv_flashBox.selected)
+					{
+						//创建透明通道图片
+						var alphajpg:BitmapData=ImageAlphaUtil.getRaData(bitmapDataArr[i].data,0x000000);
+						var alphajpgBytes:ByteArray=jpgCoder.encode(alphajpg);
+						FileUtil.createFileByByteArray(openFileDir,fileName+"_alpha/"+name+".jpg",alphajpgBytes);
+					}
+				} 
+				removeElement(_uvContainer);
+				Alert.show("yf2d头文件文件创建完成");
+				
+				resetRolePlayerPosition();
+			}
+			
+			/**和json数据版定生成  用于js
+			 */ 
+			private function saveForJson():void
+			{
+				addElement(_uvContainer);
+				/// flex的像素拷贝必须要延时    ,要不然 就会拷贝 不了 像素 
+//				var time:TimeOut=new TimeOut(2000,saveForJsonUV);//一个方向一个图片
+				
+				var actionContainer:ActionContainer = new ActionContainer();
+				_uvContainer.addElement(actionContainer);
+				var jsonData:Object=GpuFileGenerator.createJsonHeadForJS(actionData);//数据头
+				PositionUtil.positionActionDataAuto3(jsonData,actionData,actionContainer);//获取完整数据
+				var time:TimeOut=new TimeOut(2000,saveForJsonUV_toJS,{actionContainer:actionContainer,jsonData:jsonData});//所有的方向动作合成一张图片
+				time.start();
+			}
+			
+			
+			/**保存 jsonUV数据  和图片数据 用于js 
+			 */ 
+			private function saveForJsonUV_toJS(obj:Object):void
+			{
+				fillActionDataInfo();
+				var actionContainer:ActionContainer = obj.actionContainer as ActionContainer;
+				var jsonData:Object = obj.jsonData;
+				var bitmapDataArr:Array=[];  
+				///填充数据
+				var fileName:String=openFileName;
+ 				var headStr:String=JSON.stringify(jsonData);
+
+				//// 分解  
+				var coder:PNGEncoder=new PNGEncoder();
+				var imageBytes:ByteArray=new ByteArray();
+				var imageLen:int;
+				var pngBytes:ByteArray;
+				var bitmapData:BitmapData;
+				var minRect:Rectangle;
+ 				var bmpData :BitmapData = actionContainer.getPic(); 
+				var mat:Matrix=new Matrix(); 
+				if(uv_jsonBox.selected)  //最小尺寸的png 
+				{
+					minRect=BitmapDataUtil.getMinRect(bmpData);
+					bitmapData=new BitmapData(minRect.width+1,minRect.height+1,true,0xFFFFFF);
+					bitmapData.draw(BitmapData(bmpData),mat);
+					pngBytes=coder.encode(bitmapData);
+				}
+				else   //2  的倍数的 png 
+				{
+					pngBytes=coder.encode(bmpData);
+				}
+				
+				var picName:String ="sequence";
+				//生成图片
+				FileUtil.createFileByByteArray(openFileDir,fileName+"/"+picName+".png",pngBytes);
+				FileUtil.createFile(openFileDir,fileName+"/yfData.json",headStr);
+				removeElement(_uvContainer);
+				Alert.show("yf-json文件文件创建完成");
+				resetRolePlayerPosition();
+			}
+			
+			/**保存 jsonUV数据  和图片数据 用于js 一个方向 一张图片
+			 */ 
+			private function saveForJsonUV(obj:Object):void
+			{
+				fillActionDataInfo();
+				var bitmapDataArr:Array=[];  
+				var jsonData:YF2dActionData=GpuFileGenerator.createYF2dData(actionData.headerData,_uvDict,bitmapDataArr);
+				var fileName:String=openFileName;
+				var headStr:String=JSON.stringify(actionData.headerData);
+				//// 分解  
+				var len:int=bitmapDataArr.length;
+				var coder:PNGEncoder=new PNGEncoder();
+				var imageBytes:ByteArray=new ByteArray();
+				var imageLen:int;
+				var pngBytes:ByteArray;
+				var bitmapData:BitmapData;
+				var minRect:Rectangle;
+				var mat:Matrix=new Matrix();
+				for(var i:int=0;i!=len;++i)
+				{
+					if(uv_jsonBox.selected)  //最小尺寸的png 
+					{
+						minRect=BitmapDataUtil.getMinRect(BitmapData(bitmapDataArr[i].data));
+						bitmapData=new BitmapData(minRect.width+1,minRect.height+1,true,0xFFFFFF);
+						bitmapData.draw(BitmapData(bitmapDataArr[i].data),mat);
+						pngBytes=coder.encode(bitmapData);
+					}
+					else   //2  的倍数的 png 
+					{
+						pngBytes=coder.encode(bitmapDataArr[i].data);
+					}
+										
+					//生成图片
+					FileUtil.createFileByByteArray(openFileDir,fileName+"/"+bitmapDataArr[i].name+".png",pngBytes);
+				}
+				FileUtil.createFile(openFileDir,fileName+"/yfData.json",headStr);
+				removeElement(_uvContainer);
+				Alert.show("yf-json文件文件创建完成");
+				resetRolePlayerPosition();
+			}
+			
+			//存储yf 数据
+			private function saveForYFData():void
+			{
+				addElement(_uvContainer);
+				/// flex的像素拷贝必须要延时    ,要不然 就会拷贝 不了 像素 
+				var time:TimeOut=new TimeOut(2000,saveForJsonUVToYF);
+				time.start();
+			}
+
+			
+			/**保存 jsonUV数据  和图片数据 到yf后缀文件中  用于C++读取   字节的写入和读取都是采用小端 littleEndian 的方式
+			 */ 
+			private function saveForJsonUVToYF(obj:Object):void
+			{
+				fillActionDataInfo();
+				var bitmapDataArr:Array=[]; 
+				var jsonData:YF2dActionData=GpuFileGenerator.createYF2dData(actionData.headerData,_uvDict,bitmapDataArr);
+				var fileName:String=openFileName;
+				var header:ByteArray=GpuFileGenerator.createJsonHeadForC(jsonData);
+				
+//				var headStr:String=JSON.stringify(actionData.headerData);
+				
+				//// 分解  
+				var len:int=bitmapDataArr.length;
+				var coder:PNGEncoder=new PNGEncoder();
+				var imageBytes:ByteArray=new ByteArray(); //C++的小端方式写文件
+				imageBytes.endian=Endian.LITTLE_ENDIAN;
+				var imageLen:int;
+				var pngBytes:ByteArray;
+				var bitmapData:BitmapData;
+				var minRect:Rectangle;
+				var mat:Matrix=new Matrix();
+				for(var i:int=0;i!=len;++i)
+				{
+					if(uv_jsonBox.selected)  //最小尺寸的png 
+					{
+						minRect=BitmapDataUtil.getMinRect(BitmapData(bitmapDataArr[i].data));
+						bitmapData=new BitmapData(minRect.width+1,minRect.height+1,true,0xFFFFFF);
+						bitmapData.draw(BitmapData(bitmapDataArr[i].data),mat);
+						pngBytes=coder.encode(bitmapData);
+					}
+					else   //2  的倍数的 png 
+					{
+						pngBytes=coder.encode(bitmapDataArr[i].data);
+					}
+					
+					imageLen=pngBytes.length;
+					imageBytes.writeInt(imageLen);
+					imageBytes.writeBytes(pngBytes,0,imageLen);
+					
+					//生成图片
+//					FileUtil.createFileByByteArray(openFileDir,fileName+"/"+bitmapDataArr[i].name+".png",pngBytes);
+				}
+				YFDataManager.createFile(imageBytes,header,openFileDir,fileName+TypeFile.YFExtention);
+//				FileUtil.createFile(openFileDir,fileName+"/yfData.json",headStr);
+				removeElement(_uvContainer);
+				Alert.show("yf文件文件创建完成");
+				resetRolePlayerPosition();
+			}
+			
+			private function onMouseEvent(e:MouseEvent):void
+			{
+				switch(e.type)
+				{
+					case MouseEvent.MOUSE_DOWN:
+						if(Mouse.cursor=="select")
+						{
+							onSelectColor();
+						}
+						break;
+					case MouseEvent.MOUSE_UP:
+						Mouse.cursor=MouseCursor.AUTO;
+						break;
+					
+				}
+			}
+			private  function onSelectColor():void
+			{
+				var color:uint=BitmapDataUtil.getColor(this,mouseX,mouseY);
+				colorPicker.selectedColor=color;
+				
+			}
+			
+			private function onFileHanlder(e:Event):void
+			{
+				var file:File;
+				var data:ByteArray
+				switch(e.currentTarget)
+				{
+					case bgFile:
+						bgImage.source=bgFile.url;
+						break;
+					case saveFile:
+						fillActionDataInfo();
+						file=File.desktopDirectory;
+						file.url=saveFile.parent.url;
+						data=FileGenerator.Instance.createData(actionData,rbg,ra,colorPicker.selectedColor);
+						FileUtil.createFileByByteArray(file,saveFile.name+TypeFile.FileExtention,data);
+						/// 刷新 界面
+						//重置  角色坐标  
+						resetRolePlayerPosition();
+						break;
+					case actionDataSaveFile:   ///actioonData数据保存
+						fillActionDataInfo();
+						file=File.desktopDirectory;
+						file.url=actionDataSaveFile.parent.url;
+						FileActionDataUtil.createActionData(actionData,file,actionDataSaveFile.name+TypeFile.ActionDataExtension);
+						/// 刷新 界面
+						//重置  角色坐标  
+						resetRolePlayerPosition();
+						break;
+					case androidDataSaveFile:
+						fillActionDataInfo();
+						file=File.desktopDirectory;
+						file.url=androidDataSaveFile.parent.url;
+						AndroidDataManager.createAndroidData(actionData,file,androidDataSaveFile.name+TypeFile.AndroidExtention);
+						/// 刷新 界面
+						//重置  角色坐标  
+						resetRolePlayerPosition();
+						break;
+					case pngExportFile:
+						trace("pngExportFile",pngExportFile.url,"name",openFileName);
+						fillActionDataInfo();
+						ExportPngManager.doExport(pngExportFile,actionData,openFileName);
+						resetRolePlayerPosition();
+						break;
+				}
+			}
+			
+			
+			
+			private function fillActionDataInfo():void
+			{
+				//保存头部信息
+				///更新 角色坐标
+				var difPoint:Point=new Point();
+				difPoint.x=rolePlayer.x-roleBaseImage.x;
+				difPoint.y=rolePlayer.y-roleBaseImage.y;
+				///更新 角色坐标
+				MovieDictUtil.updateActionDataCoordinate(difPoint,actionData);
+				actionData.headerData["blood"]={x:bloodComponent.x-roleBaseImage.x,y:bloodComponent.y-roleBaseImage.y};
+				actionData.headerData["version"]=versionHeader.text;
+				actionData.headerData["blendMode"]=blendModePane.mode; ///设置渲染模式
+				actionData.headerData["skillRotate"]=skillRotate.selected;  ///设置打在身上技能是否随机旋转
+				//是否是 大翅膀坐骑
+				actionData.headerData["isWingMount"]=wingMount.selected;  ///设置打在身上技能是否随机旋转
+				//技能循环次数
+				var skillLoopTimes:int=int(skillLoop.text);
+				if(skillLoopTimes<=0)skillLoopTimes=1;
+				actionData.headerData["loopTime"]=skillLoopTimes;
+				///
+				actionData.headerData["filters"]=filterPane.filterUse;
+				if(actionData.headerData["filters"])
+				{
+					actionData.headerData["filter1"]=filterPane.filter1Data;
+					actionData.headerData["filter2"]=filterPane.filter2Data;
+				}
+				else 
+				{
+					delete actionData.headerData["filter1"];
+					delete actionData.headerData["filter2"];
+				}
+				
+				
+				
+				
+			}
+			
+			
+			private function resetRolePlayerPosition():void
+			{
+				rolePlayer.x=roleBasePoint.x;
+				rolePlayer.y=roleBasePoint.y;
+			}
+			private  var rbg:int;
+			private var ra:int;
+			private function onExportFile(e:ParamEvent):void
+			{
+				rbg=int(e.data.rbg);
+				ra=int(e.data.ra);
+				saveFile.browseForSave("保存");
+			}
+			
+			/// 测试合成  合成例子测试 数据合成 ActionData.addActionData测试
+			/* protected function onMerge(event:MouseEvent):void
+			{
+				// TODO Auto-generated method stub
+				var  file:File=File.desktopDirectory;
+				file.url="file:///C:/Users/Administrator/Desktop/ceshi/";
+				
+				actionData.addActionData(refRole.actionData);
+				var data:ByteArray=FileGenerator.Instance.createData(actionData);
+				FileUtil.createFileByByteArray(file,"test"+TypeFile.FileExtention,data); 
+			} */
+			
+			protected function bloodComponent_mouseUpHandler(event:MouseEvent):void
+			{
+				// TODO Auto-generated method stub
+				bloodPane.initData(bloodComponent.x-roleBasePoint.x,bloodComponent.y-roleBasePoint.y);
+			}
+			
+			/**锁定主角
+			 */ 
+			protected function lockHero_clickHandler(event:MouseEvent=null):void
+			{
+				rolePlayer.mouseEnabled=!lockHero.selected;
+			}
+			
+			/**删除跟随点 信息
+			 */ 
+			protected function onFollowDelete(event:MouseEvent):void
+			{
+				if(actionData)
+				{
+					if(actionData.hasOffsetData())
+					{
+						actionData.headerData["offsetData"]=null;
+						delete actionData.headerData["offsetData"];
+						updateOffsetDataView();
+						Alert.show("跟随点删除成功!");
+					}
+				}
+			}
+			
+			protected function skillLoop_changeHandler(event:TextOperationEvent):void
+			{
+				// TODO Auto-generated method stub
+				if(actionData)
+				{
+					var skillLoopTimes:int=int(skillLoop.text);
+					if(skillLoopTimes<=0)skillLoopTimes=1;
+					actionData.headerData["loopTime"]=skillLoopTimes;
+					playAll();
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:Image id="bgImage" mouseChildren="false" mouseEnabled="false" />
+	<component:RolePointImage id="roleBaseImage"  toolTip="引点" />
+	<flex:DragPane width="150" height="400" x="815" y="140" title="动作" id="treeContainer" backgroundAlpha="0" >
+		<mx:Tree id="mTree"  width="100%" height="100%" labelField="@label" showRoot="false" itemClick="itemClick(event)" />	
+		<s:CheckBox id="hasFollowInfoCheck" x="54" y="-21" label="是否有跟随点" color="#FB1111"
+					enabled="false" mouseChildren="false" mouseEnabled="false"/>
+	</flex:DragPane>
+	<component:FramePane x="700" y="538"  id="framePane">
+	</component:FramePane>
+	<component:FrameRatePane x="406" y="10" id="frameRatePane" visible="false">
+	</component:FrameRatePane>
+	<component:BloodPane x="246" y="23" visible="false" id="bloodPane">
+	</component:BloodPane>
+	<component:BloodComponent x="456" y="103" id="bloodComponent"  mouseDown="{bloodPane.visible=true}" mouseUp="bloodComponent_mouseUpHandler(event)"/>
+	<component:FrameViewPane x="332" y="0" visible="false">
+	</component:FrameViewPane>
+	<s:Label x="6" y="7" color="#FC0101" text="版本"/>
+	<s:Label x="209" y="10" color="#FC0101" text="大小"/>
+	<s:TextInput id="versionHeader" x="37" y="3" width="65" height="18" color="#FC0D0D" text="2.01"  contentBackgroundAlpha="0.2"/>
+	<s:TextInput id="skillLoop" x="465" y="4" width="36" height="18" color="#FC0D0D" text="1"  contentBackgroundAlpha="0.2" toolTip="技能循环次数" restrict="0-9" change="skillLoop_changeHandler(event)"/>
+	<s:TextInput id="actionDataSizePng" x="236" y="6" width="56" height="18" color="#F40961" text="0"  contentBackgroundAlpha="0.2" toolTip="png计算单位为kb"/>
+	<s:TextInput id="actionDataSizeJpg" x="296" y="6" width="51" height="18" color="#F40961" text="0"  contentBackgroundAlpha="0.2" toolTip="jpg模糊计算单位为kb"/>
+	<component:RolePane x="500" y="10" id="rolePane">
+	</component:RolePane>
+	<flex:FlexUI id="roleContainer" />
+	<s:Button id="changeBgBtn" x="238" y="563" width="68" label="切换背景" click="buttonClick(event)"/>
+	<s:Button id="preBtn" x="10" y="563" label="上一帧" click="buttonClick(event)"/>
+	<s:Button id="nextBtn" x="85" y="563" label="下一帧" click="buttonClick(event)"/>
+	<s:Button id="stopBtn" x="160" y="563" label="暂停" click="buttonClick(event)"/>
+	<s:Button id="exportBtn" x="87" y="591" label="导出" click="buttonClick(event)"/>
+	<s:Button id="exportPng" x="10" y="591" label="chitu" click="buttonClick(event)"/>
+	<s:Button x="195" y="591" label="选取边色" click="buttonClick(event)" id="colorSelectBtn"/>
+	<mx:ColorPicker x="165" y="592" selectedColor="0x000000" id="colorPicker" />
+	<s:Button id="actionDataBtn" x="270" y="592" label="actonData" click="buttonClick(event)"/>
+	<s:Button id="androidBtn" x="8" y="614" width="72" label="导出ad" click="buttonClick(event)"/>
+	<component:BlendModePane id="blendModePane" x="107" y="0">
+	</component:BlendModePane>
+	<s:CheckBox id="lockHero" x="8" y="36" label="锁定角色" click="lockHero_clickHandler(event)"
+				color="#FAF0EF" selected="true" toolTip="锁定后不能拖动编辑的对象"/>
+	<component:FiliterPane id="filterPane" x="10" y="54">
+	</component:FiliterPane>
+	<s:CheckBox id="repacebtn" x="82" y="36" label="替换动作" color="#FAF0EF" toolTip="拖入的资源会覆盖替换掉当前已经存在的资源"/>
+	<s:CheckBox id="skillRotate" x="300" y="36" label="技能随机旋转" color="#FAF0EF" toolTip="打在人身上的技能随机旋转"/>
+	<s:CheckBox id="wingMount" x="400" y="36" label="大翅膀坐骑" color="#FAF0EF" toolTip="是否是大翅膀坐骑，用于人物深度排序"/>
+	<s:CheckBox id="followbtn" x="156" y="36" label="是否为跟随点" color="#FAF0EF" toolTip="是否为坐骑跟随点，武器光效跟随点,只对拖入的xml有效"/>
+	<s:Button x="248" y="38" width="44" height="16" label="删除" click="onFollowDelete(event)"
+			  toolTip="删除跟随点,如果有跟随点就进行跟随点删除"/>
+	<s:CheckBox id="mohuCheckBox" x="349" y="5" label="模糊计算" color="#EBDEDE" toolTip="是否进行大小模糊计算"/>
+	<s:Label x="418" y="8" color="#F0E4E4" text="循环次数"/>
+	<s:Button id="uv_flashBtn" x="85" y="615" label="UV_flash" click="buttonClick(event)"
+			  toolTip="导出UV贴图，数据为as3 Object类型,flash平台使用"/>
+	<s:Button id="uv_jsonBtn" x="262" y="619" label="uv_json" click="buttonClick(event)"
+			  toolTip="导出UV贴图，数据为json类型，手游平台使用"/>
+	<s:Button id="yfBtn" x="6" y="644" label="导出yf" click="buttonClick(event)"
+			  toolTip="导出UV贴图，数据为json类型，手游平台使用,图片最小尺寸勾选将选择最小尺寸"/>
+	<s:CheckBox id="uv_flashBox" x="162" y="619" label="生成选取区域" color="#FBF1F9"
+				toolTip="展UV是否生成选取区域的图，atf动画主角需要其他动画不需要"/>
+	<s:CheckBox id="uv_jsonBox" x="340" y="622" label="图片是否变成最小尺寸" color="#D30F0F" selected="true"
+				toolTip="图片是否最小尺寸,选中则为最小尺寸，不选中则为2的倍数大小的尺寸，用于贴图"/>
+	<!--  合成例子测试 数据合成 ActionData.addActionData测试
+	<s:Button x="246" y="329" label="测试合成" click="onMerge(event)"/>
+	-->
+</s:WindowedApplication>

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Panel xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" width="400" height="300"
+		 creationComplete="init(event)" backgroundAlpha="0.3"
+		 >
+	<fx:Script>
+		<![CDATA[
+			import mx.events.FlexEvent;
+			
+			private function init(event:FlexEvent):void
+			{
+				addEvent();
+			}
+			
+			private function addEvent():void
+			{
+				titleDisplay.addEventListener(MouseEvent.MOUSE_DOWN,onMouseEvent);
+				titleDisplay.addEventListener(MouseEvent.MOUSE_UP,onMouseEvent);
+			}
+			private function removeEvent():void
+			{
+				titleDisplay.removeEventListener(MouseEvent.MOUSE_DOWN,onMouseEvent);
+				titleDisplay.removeEventListener(MouseEvent.MOUSE_UP,onMouseEvent);
+			}
+			private function onMouseEvent(e:MouseEvent):void
+			{
+				switch(e.type)
+				{
+					case MouseEvent.MOUSE_DOWN:
+						startDrag();
+						break;
+					case MouseEvent.MOUSE_UP:
+						stopDrag();
+						break;
+				}
+			}
+			
+			public function dispose():void
+			{
+				removeEvent();
+			}
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+</s:Panel>

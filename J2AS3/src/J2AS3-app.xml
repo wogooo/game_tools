@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<application xmlns="http://ns.adobe.com/air/application/1.0">
+    <id>J2AS3</id>
+    <filename>J2AS3</filename>
+    <name>J2AS3</name>
+    <version>v1.3</version>
+    <description>Java to ActionScript 3</description>
+    <initialWindow>
+        <content>[This value will be overwritten by Flex Builder in the output app.xml]</content>
+        <title>J2AS3</title>
+        <width>800</width>
+        <height>600</height>
+    </initialWindow>
+  <icon>
+      <image16x16>icons/AIRApp_16.png</image16x16>      
+      <image32x32>icons/AIRApp_32.png</image32x32>      
+      <image48x48>icons/AIRApp_48.png</image48x48>      
+      <image128x128>icons/AIRApp_128.png</image128x128>
+  </icon>
+</application>

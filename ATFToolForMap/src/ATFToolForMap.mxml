@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009"
+					   xmlns:s="library://ns.adobe.com/flex/spark"
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   width="519" height="445" creationComplete="init(event)">
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.YFFramework.air.FileUtil;
+			import com.YFFramework.core.utils.UtilString;
+			
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			private var _shotComplete:Event;
+			private var _file:File;
+			private var _nativeProcessStartupInfo:NativeProcessStartupInfo;
+			private var _process:NativeProcess;
+			private var _bitmapData:BitmapData;
+			private var _bitmap:Bitmap;
+			
+			private static var  AtfEXE:String="E:\\as3\\study\\atftools\\windows\\"+"png2atf.exe";
+			
+			protected var args:Vector.<String> = new Vector.<String>;
+			
+			protected var _fileSaveDir:File=File.desktopDirectory;
+			protected function init(e:FlexEvent):void
+			{
+				
+				//				AtfEXE=File.applicationDirectory.nativePath+"\\atftools\\windows\\png2atf.exe"
+				
+				AtfEXE="F:\\ATF\\atftools\\windows\\"+"png2atf.exe";
+				_file = File.applicationDirectory.resolvePath("C:\\Windows\\System32\\cmd.exe");
+				_nativeProcessStartupInfo = new NativeProcessStartupInfo();
+				_nativeProcessStartupInfo.executable = _file;
+				
+				_nativeProcessStartupInfo.arguments=args;
+				
+				
+				_process = new NativeProcess();
+				_process.addEventListener(NativeProcessExitEvent.EXIT,onExit);
+				_process.addEventListener(ProgressEvent.STANDARD_OUTPUT_DATA,onStandardOutputData);
+				_process.addEventListener(ProgressEvent.STANDARD_ERROR_DATA, onError);
+				_process.start(_nativeProcessStartupInfo);
+				
+				addEventListener(NativeDragEvent.NATIVE_DRAG_DROP,onDragDrop);
+				addEventListener(NativeDragEvent.NATIVE_DRAG_ENTER,onDragDrop);
+			}
+			
+			private function onDragDrop(e:NativeDragEvent):void
+			{
+				//将拖入的文件以数组形式获得，指定拖入的数据是文件数组形式
+				var files:Array = e.clipboard.getData(ClipboardFormats.FILE_LIST_FORMAT) as Array;
+				//获得拖入的第一个文件
+				var file:File = File(files[0]);
+				switch(e.type)
+				{				
+					case NativeDragEvent.NATIVE_DRAG_ENTER:  
+						if(file.type==".png"||file.type==".jpg"||file.isDirectory )
+							NativeDragManager.acceptDragDrop(this);
+						break;
+					case NativeDragEvent.NATIVE_DRAG_DROP:
+//						if(!batchBox.selected)  //转化地图
+//						{
+							if(file.type==".png"||file.type==".jpg")
+							{
+								_fileSaveDir=file.parent;
+								convertFile(file);
+							}
+							else if(file.isDirectory)
+							{
+								_fileSaveDir=file.parent;
+								_fileSaveDir=FileUtil.createDirectory(_fileSaveDir.url+"/"+file.name+"_atf");
+								convertDir(file);
+							}
+//						}
+//						else   // 动画 批量转化
+//						{
+//							
+//							if(file.type==".png"||file.type==".jpg")
+//							{
+//								convertBatchFile(file);
+//							}
+//							else if(file.isDirectory)
+//							{
+//								convertBatchFileDir(file);
+//							}
+//						}
+						break;
+				}
+			}  
+			
+			//文件批量转化
+			private function convertBatchFile(file:File):void
+			{
+				var parentName:String=file.parent.name;
+				_fileSaveDir=file.parent.parent;
+				_fileSaveDir=FileUtil.createDirectory(_fileSaveDir.url+"/"+parentName+"_atf");
+				convertFile(file);
+			}
+			
+			private function convertBatchFileDir(dir:File):void
+			{
+				var arr:Array=dir.getDirectoryListing();
+				for each (var file:File in arr)
+				{
+					if(file.type==".png"||file.type==".jpg")
+					{
+						convertBatchFile(file);
+					}
+					else if(file.isDirectory)
+					{
+						convertBatchFileDir(file);
+					}
+				}
+			}
+			
+			
+			
+			
+			
+			private function convertDir(dir:File):void
+			{
+				var arr:Array=dir.getDirectoryListing();
+				for each (var file:File in arr)
+				{
+					if(file.type==".png"||file.type==".jpg")
+					{
+						convertFile(file);
+					}
+				}
+			}
+			
+			private function convertFile(file:File):void
+			{
+				
+				var input:String=file.nativePath;
+				var fileName:String=UtilString.getExactName(file.url);
+				var outPut:String=_fileSaveDir.nativePath+"\\"+fileName+".atf";
+				
+				excute(input,outPut);
+			}
+			
+			
+			
+			private function onError(event:ProgressEvent):void 
+			{
+				
+				var process:NativeProcess = event.target as NativeProcess;
+				var data:String = process.standardError.readUTFBytes(process.standardError.bytesAvailable);
+				lbl.text += data;		
+			}
+			
+			private function onStandardOutputData(event:ProgressEvent):void
+			{
+				var process:NativeProcess = event.target as NativeProcess;
+				var data:String = process.standardOutput.readUTFBytes(process.standardOutput.bytesAvailable);
+				lbl.text += data
+			}
+			
+			private function onExit(e:NativeProcessExitEvent):void
+			{
+				
+				Alert.show("Execution Complete");
+			}
+			
+			/**执行那个 
+			 */ 
+			private function excute(input:String,output:String):void
+			{
+				var argu:String="";
+				//				argu=AtfEXE+" -n  0,0 -c d   -i "+input+" -o " +output;  //地图   压缩 
+				
+				///人物 avartar
+				//				var argu:String=AtfEXE+" -n  0,0 d   -i "+input+" -o " +output;
+				
+				argu=AtfEXE+" -n  0,0 -c d   -i "+input+" -o " +output;  ///非地图 不压缩
+				
+				
+				args.push(argu);
+				_process.standardInput.writeUTFBytes(args + "\n" ); 
+				args.pop();
+			}
+			
+			
+		]]>
+	</fx:Script>
+	<s:TextArea id="lbl" x="11" y="40" width="494" height="387"/>
+	<s:Label x="29" y="20" text="jpg  png转化为atf工具"/>
+</s:WindowedApplication>

@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<flex:DragPane xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				   xmlns:s="library://ns.adobe.com/flex/spark" 
+				   xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:flex="com.YFFramework.air.flex.*" width="298" height="328"
+				   >
+	
+	<fx:Script>
+		<![CDATA[
+			
+			import spark.events.TextOperationEvent;
+			
+			import view.FlexMovieClip;
+			
+			private var _flexMovieClip:FlexMovieClip;
+			protected function slideHandle(event:Event):void
+			{
+				var num:Number=0;
+				switch(event.currentTarget) 
+				{
+					case scaleXSlide:
+						num=int(scaleXSlide.value*10)/10;
+						scaleXTxt.text=num.toString();
+						scaleXSlide.value=num;
+						break;
+					case scaleYSlide:
+						num=int(scaleYSlide.value*10)/10;
+						scaleYTxt.text=num.toString();
+						scaleYSlide.value=num;
+						break;
+					case rotationSlide:
+						rotationTxt.text=rotationSlide.value.toString();
+						break;
+				}
+
+				updateView();
+			}
+			
+			protected function txthandle(event:TextOperationEvent):void
+			{
+				switch(event.currentTarget)
+				{
+					case scaleXTxt:
+						scaleXSlide.value=Number(scaleXTxt.text);
+//						scaleXTxt.text=scaleXSlide.value.toString();
+						break;
+					case scaleYTxt:
+						scaleYSlide.value=Math.abs(Number(scaleYTxt.text));
+//						scaleYTxt.text=scaleYSlide.value.toString();
+						break;
+					case rotationTxt:
+						rotationSlide.value=Number(rotationTxt.text);
+						break;
+				}
+				updateView();
+			}
+			
+			private function updateView():void
+			{
+				if(_flexMovieClip)
+				{
+					var mScaleX:Number=scaleXSlide.value;
+					var mScaleY:Number=scaleYSlide.value;
+					var mrotation:Number=rotationSlide.value;
+					_flexMovieClip.scaleX=mScaleX;
+					_flexMovieClip.scaleY=mScaleY;
+					_flexMovieClip.rotation=mrotation;
+				}
+			}
+			public function setMovie(movie:FlexMovieClip):void
+			{
+				_flexMovieClip=movie;
+				if(_flexMovieClip)
+				{
+					scaleXSlide.value=_flexMovieClip.scaleX;
+					scaleYSlide.value=_flexMovieClip.scaleY;
+					rotationSlide.value=_flexMovieClip.rotation;
+					scaleXTxt.text=scaleXSlide.value.toString();
+					scaleYTxt.text=scaleYSlide.value.toString();
+					rotationTxt.text=rotationSlide.value.toString();
+				}
+			}
+			
+			
+			protected function onCloseClick(event:MouseEvent):void
+			{
+				visible=false;
+			}
+
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<s:Label x="18" y="41" text="水平缩放scaleX"/>
+	<s:Label x="19" y="75" text="垂直缩放scaleY"/>
+	<s:Label x="80" y="112" text="旋转"/>
+	<s:TextInput id="scaleXTxt" x="112" y="37" width="58" change="txthandle(event)" text="1"/>
+	<s:TextInput id="scaleYTxt" x="112" y="72" width="58" change="txthandle(event)" text="1"/>
+	<s:TextInput id="rotationTxt" x="112" y="109" width="58" change="txthandle(event)" text="0"/>
+	<s:HSlider id="scaleXSlide" x="178" y="39" width="58" height="16" change="slideHandle(event)"
+			   maximum="50" minimum="-50" stepSize="0.1" snapInterval="0.1" value="1"/>
+	<s:HSlider id="scaleYSlide" x="178" y="75" width="58" height="16" change="slideHandle(event)"
+			   maximum="10" minimum="0" stepSize="0.1" value="1"/>
+	<s:HSlider id="rotationSlide" x="177" y="112" width="58" height="16" change="slideHandle(event)"
+			   maximum="360" minimum="0" stepSize="0.1" value="0"/>
+	<s:Label id="xBtn" x="271" y="-23" color="#EF0909" fontSize="20" text="X" buttonMode="true" click="onCloseClick(event)"/>
+
+</flex:DragPane>

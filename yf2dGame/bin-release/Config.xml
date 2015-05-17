@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<data>
+	<system title="游戏端口 ip等的数据" >
+	
+<!--
+		<socket ip="192.168.1.49" port="10087" checkport="8990"/>
+		-->
+	<socket ip="127.0.0.1" port="10087" checkport="8990"/>
+			
+	</system>
+	<!-- http://kisufans.me/game/static2/     http://static.mygame.com/ -->
+	<libs tittle="资源文件地址" root="http://static2.mygame.com/" version="2012.10.10">
+		<res tittle="人物替换图图片掉落替换图片以及人物阴影图片的合集">common/loading/common.res</res>
+		<ui>
+			<swf tittle="组件皮肤">common/loading/uiSkin.swf</swf>
+			<swf tittle="战斗文字皮肤">common/loading/fightUI.swf</swf>
+			<swf tittle="图标手势皮肤">common/loading/cursorUI.swf</swf>
+			<swf tittle="游戏场景小图片资源库">common/loading/common.swf</swf>
+			<swf tittle="游戏界面">common/loading/mainUI.swf</swf>
+		</ui>  
+		<files>
+			<item id="1000"  tittle="角色基础属性表" >data/csv/roleBasic.json</item>
+			<item id="1001"  tittle="装备基础属性表" >data/csv/equipProp.json</item>
+			<item id="1002"  tittle="皮肤图标id总表" >data/csv/skin.json</item>
+			<item id="1003"  tittle="药品表" >data/csv/medicineProp.json</item>
+			
+			<item id="2001"  tittle="怪物属性表" >data/csv/monsterProp.json</item>
+			
+			<item id ="3001" tittle="技能特效播放数据表">data/csv/fightEffect.json</item>
+			<item id ="3002" tittle="战斗技能控制表">data/csv/fightSkill.json</item>
+			<item id ="3003" tittle="技能表">data/csv/skill.json</item>
+			
+			<item id ="4000" tittle="宠物基本表">data/csv/petProp.json</item>
+			<item id ="4010" tittle="坐骑基本表">data/csv/mountProp.json</item>
+			
+			<item id="6000" tittle="场景配置表">data/csv/mapSene.json</item>
+			<item id="6001" tittle="场景跳转配置表">data/csv/skipPoint.json</item>
+			<item id="6100" tittle="npc配置表">data/csv/npcProp.json</item>
+			
+		</files>
+		
+	</libs>
+</data>

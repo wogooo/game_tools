@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<flex:DragPane xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:flex="com.YFFramework.air.flex.*" width="282" height="330"
+			   title="帧信息"  creationComplete="init(event)" backgroundAlpha="1"
+			   
+			   >
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.YFFramework.core.event.EventCenter;
+			
+			import events.ParamEvent;
+			
+			import manager.ActionData;
+			import manager.BitmapDataEx;
+			
+			import mx.events.FlexEvent;
+			
+			import utils.ActionUtil;
+			import utils.MovieDictUtil;
+			
+			private var source:BitmapDataEx;
+			
+			
+			protected function init(event:FlexEvent):void
+			{
+				addEvents();
+			}
+			private function addEvents():void
+			{
+				EventCenter.Instance.addEventListener(ParamEvent.ViewFrameInfo,onParamEvent);
+			}
+			
+			private function onParamEvent(e:ParamEvent):void
+			{
+				var obj:Object=e.data;
+				var data:BitmapDataEx=obj.bitmapDataEx;
+				var  actionData:ActionData=obj.actionData;
+				
+				initImage(data,actionData);
+				visible=true;
+				
+			}
+			public function initImage(source:BitmapDataEx,actionData:ActionData):void
+			{
+				this.source=source;
+				myImage.source=source.bitmapData;
+				xHeader.text=String(source.x);
+				yHeader.text=String(source.y);
+				delayHeader.text=String(source.delay);
+				frameIndexHeader.text=String(source.frameIndex);
+				myImage.x=5;
+				myImage.y=5;
+				
+				var obj:Object=MovieDictUtil.GetIndex(actionData,source);
+				 var actionStr:String=ActionUtil.GetActionName(obj.action);
+				 var directionStr:String=ActionUtil.getDirectionName(obj.direction);
+				
+				title="总帧数-"+(obj.index+1)+"-动作-"+actionStr+"-方向-"+directionStr+"-帧-"+source.frameIndex;
+			}
+			
+			protected function onButtonClick(event:MouseEvent):void
+			{
+				// TODO Auto-generated method stub
+				switch(event.currentTarget)
+				{		
+					///刷新 
+					case flushBtn:
+						changeData();
+						EventCenter.Instance.dispatchEvent(new ParamEvent(ParamEvent.FlushPlay,source));
+						break;
+					///刷新 
+					case deleteBtn:
+						EventCenter.Instance.dispatchEvent(new ParamEvent(ParamEvent.DeleteFrame,source));
+						visible=false;
+						break;
+					
+				}
+			}
+			
+			private function changeData():void
+			{
+				 var index:int=int(delayHeader.text);
+				 if(index<=0)
+				 {
+					 index=1;
+					 delayHeader.text=index.toString();
+				 }
+				source.delay=int(delayHeader.text);
+			}
+			
+			
+		]]>
+	</fx:Script>
+	
+	
+	<s:Label x="8" y="254" text="x"/>
+	<s:Label x="82" y="255" text="y"/>
+	<s:Label x="156" y="256" text="帧数"/>
+	<s:Label x="14" y="279" text="停留帧数&#xd;"/>
+	<s:TextInput id="xHeader" x="19" y="252" width="56" height="20" mouseChildren="false" mouseEnabled="false"/>
+	<s:TextInput id="yHeader" x="93" y="252" width="56" height="20" mouseChildren="false" mouseEnabled="false"/>
+	<s:TextInput id="frameIndexHeader" x="185" y="251" width="52" height="20" mouseChildren="false" mouseEnabled="false"/>
+	<s:TextInput id="delayHeader" x="63" y="275" width="46" height="20" />
+	<s:Button id="flushBtn" x="121" y="278" width="58" height="17" label="刷新"
+			  click="onButtonClick(event)"/>
+	<s:Button id="deleteBtn" x="195" y="278" width="58" height="17" label="删除" click="onButtonClick(event)"/>
+	<s:Label x="266" y="-24" color="#FC0B0B" fontSize="18" text="X" mouseChildren="false" buttonMode="true" click="{visible=false}"/>
+	
+	<s:Scroller x="0" y="0" width="279" height="246">
+		<s:Group width="100%" height="100%">
+			<s:Image id="myImage" />
+		</s:Group>
+	</s:Scroller>
+		
+	
+</flex:DragPane>

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:BorderContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				   xmlns:s="library://ns.adobe.com/flex/spark" 
+				   xmlns:mx="library://ns.adobe.com/flex/mx" width="300" height="176">
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import mx.managers.PopUpManager;
+			
+			///传送点具体信息
+			public var callBack:Function;
+			protected function onClick(event:MouseEvent):void
+			{
+				switch(event.currentTarget)
+				{
+					case okBtn:
+						var data:Object={mapId:int(mapIdTxt.text),mapName:mapNameTxt.text,x:int(mapPosX.text),y:int(mapPosY.text)};
+						callBack(data);
+						dispose();
+						break;
+					case cancelBtn:
+						dispose();
+						break;
+				}
+			}
+			
+			
+			private function dispose():void
+			{
+				callBack=null;
+				PopUpManager.removePopUp(this);
+				removeAllElements();
+			}
+			
+			
+			
+			
+		]]>
+	</fx:Script>
+	<s:Label x="37" y="18" text="跳转地图Id"/>
+	<s:Label x="37" y="55" text="跳转地图名称"/>
+	<s:Label x="35" y="86" text="跳转地图坐标"/>
+	<s:TextInput id="mapIdTxt" x="129" y="14" restrict="0-9"/>
+	<s:TextInput id="mapPosX" x="128" y="83" width="55" restrict="0-9"/>
+	<s:TextInput id="mapPosY" x="205" y="83" width="52" restrict="0-9"/>
+	<s:Button id="okBtn" x="54" y="130" label="确定" click="onClick(event)"/>
+	<s:Button id="cancelBtn" x="184" y="130" label="取消" click="onClick(event)"/>
+	<s:Label x="115" y="93" text="x"/>
+	<s:Label x="195" y="90" text="y"/>
+	<s:TextInput id="mapNameTxt" x="129" y="54" />
+</s:BorderContainer>

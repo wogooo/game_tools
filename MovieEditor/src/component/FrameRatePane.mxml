@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<flex:DragPane xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:flex="com.YFFramework.air.flex.*" width="264" height="74"
+			   title="帧频--" 
+			   
+			   >
+	<fx:Script>
+		<![CDATA[
+			import com.YFFramework.core.event.YFEventCenter;
+			
+			import events.ParamEvent;
+			
+			import mx.events.FlexEvent;
+			
+			/**删除动作
+			 */ 
+			public static const DeleteAction:String="DeleteAction";
+			private var headerData:Object;
+			private var action:int;
+			protected function onCloseBtn(event:MouseEvent):void
+			{
+				visible=false;
+			}
+			
+			public function initData(headerData:Object,action:int):void
+			{
+				this.headerData=headerData;
+				this.action=action;
+				header.text=String(headerData[action]["frameRate"]);
+			}
+			
+			protected function clickIt(event:MouseEvent):void
+			{
+				headerData[action]["frameRate"]=int(header.text);
+			}
+			/**删除动作
+			 */ 
+			protected function deleteAction(event:MouseEvent):void
+			{
+				YFEventCenter.Instance.dispatchEventWith(DeleteAction,action);
+			}
+			public function updateTitle(name:String):void
+			{
+				title="帧频--"+name
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<s:Button id="okBtn" x="118" y="7" width="50" label="OK" click="clickIt(event)"/>
+	<s:Label x="10" y="8" text="帧频"/>
+	<s:TextInput id="header" x="40" y="6" width="73"/>
+	<s:Label x="246" y="-20" color="#F90147" fontSize="15" text="X" click="onCloseBtn(event)" mouseChildren="false" buttonMode="true"/>
+	<s:Button id="deleteBtn" x="176" y="8" label="删除" click="deleteAction(event)"
+			  toolTip="删除该动作"/>
+	
+	
+</flex:DragPane>

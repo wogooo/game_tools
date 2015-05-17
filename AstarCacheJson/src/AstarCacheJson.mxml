@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009"
+					   xmlns:s="library://ns.adobe.com/flex/spark"
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   width="394" height="176" creationComplete="init(event)">
+	
+	<fx:Script>  
+		<![CDATA[
+			import com.YFFramework.air.FileUtil;
+			import com.YFFramework.core.net.loader.file.FileLoader;
+			import com.YFFramework.core.net.loader.image_swf.UILoader;
+			import com.YFFramework.core.utils.math.YFMath;
+			
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			
+			private var _totalCache:Object;
+			  
+			protected function init(event:FlexEvent):void
+			{
+				addEventListener(NativeDragEvent.NATIVE_DRAG_DROP,onDragDrop);
+				addEventListener(NativeDragEvent.NATIVE_DRAG_ENTER,onDragDrop);
+				_totalCache=new Object();
+			}
+			
+			private function onDragDrop(e:NativeDragEvent):void
+			{
+				//将拖入的文件以数组形式获得，指定拖入的数据是文件数组形式
+				var files:Array = e.clipboard.getData(ClipboardFormats.FILE_LIST_FORMAT) as Array;
+				//获得拖入的第一个文件
+				var file:File = File(files[0]);
+				switch(e.type)
+				{				
+					case NativeDragEvent.NATIVE_DRAG_ENTER:  
+						if(file.type==".json"||file.isDirectory==true )
+							NativeDragManager.acceptDragDrop(this);
+						break;
+					case NativeDragEvent.NATIVE_DRAG_DROP:
+						
+						if(file.type==".json")
+						{
+							loadJson(file);
+						}
+						else if(file.isDirectory) // 如果为文件夹
+						{
+							handleDir(file);
+						}
+						break;
+				}
+			}  
+			private function loadJson(file:File):void
+			{
+				var loader:FileLoader=new FileLoader();
+				loader.loadCompleteCallBack=complete;
+				loader.load(file.url);
+			}
+			private function complete(loader:FileLoader):void
+			{
+				var data:String=String(loader.data);
+				var jsonData:Object=JSON.parse(data);
+				
+				collectObject(jsonData);
+//				for (var mapId:String in jsonData)
+//				{
+//					if(!_totalCache[mapId])_totalCache[mapId]=new Object();
+//					for(var key:String in jsonData[mapId])
+//					{
+//						_totalCache[mapId][key]=jsonData[mapId][key];
+//					}
+//				}
+			}
+			
+			
+			private function readFile(file:File,create:Boolean=false):void
+			{
+				var fileStream:FileStream = new FileStream();
+				fileStream.open(file, FileMode.READ);
+				var data:String = (fileStream.readUTFBytes(fileStream.bytesAvailable));
+				fileStream.close();
+				
+				var jsonData:Object=JSON.parse(data);
+
+				collectObject(jsonData);
+				
+				if(create)
+				{
+					var total:String=JSON.stringify(_totalCache);
+					FileUtil.createFile(File.desktopDirectory,"aStarCache.json",total);
+					Alert.show("生存完成");
+				}
+			}
+			
+			
+			private function collectObject(jsonData:Object):void
+			{
+				var testData:Array;
+				var len:int;
+				var distance:Number;
+				for (var mapId:String in jsonData)
+				{
+					if(!_totalCache[mapId])_totalCache[mapId]=new Object();
+					for(var key:String in jsonData[mapId])
+					{
+						testData=jsonData[mapId][key];
+						len=testData.length;
+						distance=YFMath.distance(testData[0].x,testData[0].y,testData[len-1].x,testData[len-1].y);
+						if(distance>500)
+						{
+							_totalCache[mapId][key]=jsonData[mapId][key];
+						}
+					}
+				}
+
+			}
+			
+			private function handleDir(dir:File):void
+			{
+				var arr:Array=dir.getDirectoryListing();
+				for each (var file:File in arr )
+				{
+					if(file.isDirectory)
+					{
+						handleDir(dir);
+					}
+					else if(file.type==".json")
+					{
+						readFile(file,false);
+					}
+				}
+				var total:String=JSON.stringify(_totalCache);
+				FileUtil.createFile(File.desktopDirectory,"aStarCache.json",total);
+				Alert.show("生存完成");
+			}
+			
+			
+		]]>
+		
+	</fx:Script>
+<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<s:Label x="133" y="88" text="缓存寻路点"/>
+</s:WindowedApplication>
+
+

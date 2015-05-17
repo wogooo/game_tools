@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<flex:DragPane xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:flex="com.YFFramework.air.flex.*" width="298" height="328"
+			   title="基本信息 "
+			   >
+	
+	<fx:Script>
+		<![CDATA[
+			protected function onClick(event:MouseEvent):void
+			{
+				visible=false;
+			}
+			
+			
+			public function update(obj:Object):void
+			{
+				typeTF.text=obj.type.toString();
+				mapIdTxt.text=obj.mapName.toString();
+				mapDesTxt.text=obj.des.toString();
+				gridWTxt.text=obj.gridW.toString();
+				gridHTxt.text=obj.gridH.toString();
+				mapWTxt.text=obj.mapW.toString();
+				mapHTxt.text=obj.mapH.toString();
+				rowTxt.text=obj.rows.toString();
+				columnTxt.text=obj.columns.toString();
+				tileWTxt.text=obj.tileW.toString();
+				tileHTxt.text=obj.tileH.toString();
+				mouseXTxt.text=obj.mouseX.toString();
+				mouseYTxt.text=obj.mouseY.toString();
+				tileXTxt.text=obj.tileX.toString();
+				tileYTxt.text=obj.tileY.toString();
+				gridMouseX.text=String(obj.tileX*obj.tileW);
+				gridMouseY.text=String(obj.tileY*obj.tileH);
+			}
+			
+			
+			
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<s:Label x="30" y="27" text="地图Id"/>
+	<s:Label x="135" y="31" text="描述 "/>
+	<s:Label x="36" y="67" text="网格宽"/>
+	<s:Label x="34" y="94" text="地图宽"/>
+	<s:Label x="165" y="67" text="网格高"/>
+	<s:Label x="34" y="150" text="tileW"/>
+	<s:Label x="178" y="146" text="tileH"/>
+	<s:Label x="9" y="196" text="mouseX"/>
+	<s:Label x="167" y="186" text="mouseY"/>
+	<s:Label x="41" y="222" text="tileX"/>
+	<s:Label x="189" y="224" text="tileY"/>
+	<s:Label x="41" y="120" text="行"/>
+	<s:Label x="189" y="115" text="列"/>
+	<s:TextInput id="mapIdTxt" x="80" y="28" width="50" enabled="false"/>
+	<s:TextInput id="gridHTxt" x="222" y="63" width="60" enabled="false"/>
+	<s:TextInput id="mapHTxt" x="222" y="88" width="60" enabled="false"/>
+	<s:TextInput id="gridWTxt" x="80" y="58" width="60" enabled="false"/>
+	<s:TextInput id="mapWTxt" x="80" y="88" width="60" enabled="false"/>
+	<s:TextInput id="rowTxt" x="80" y="114" width="60" enabled="false"/>
+	<s:TextInput id="columnTxt" x="222" y="113" width="60" enabled="false"/>
+	<s:TextInput id="tileWTxt" x="80" y="148" width="60" enabled="false"/>
+	<s:TextInput id="tileHTxt" x="223" y="147" width="60" enabled="false"/>
+	<s:TextInput id="mouseXTxt" x="80" y="186" width="60" enabled="false"/>
+	<s:TextInput id="mouseYTxt" x="222" y="186" width="60" enabled="false"/>
+	<s:TextInput id="tileXTxt" x="80" y="218" width="60" enabled="false"/>
+	<s:TextInput id="tileYTxt" x="222" y="218" width="60" enabled="false"/>
+	<s:Label id="xBtn" x="278" y="-23" color="#EF0909" fontSize="20" text="X" buttonMode="true" click="onClick(event)"/>
+	<s:Label x="9" y="260" text="gridMouseX"/>
+	<s:Label x="156" y="261" text="gridMouseY"/>
+	<s:TextInput id="gridMouseX" x="80" y="251" width="56"/>
+	<s:TextInput id="gridMouseY" x="225" y="254" width="56"/>
+	<s:Label x="165" y="95" text="地图高"/>
+	<s:TextInput id="mapDesTxt" x="183" y="28" width="50" enabled="false"/>
+	<s:Label x="31" y="4" text="类型"/>
+	<s:TextInput id="typeTF" x="73" y="3" width="109"/>
+</flex:DragPane>

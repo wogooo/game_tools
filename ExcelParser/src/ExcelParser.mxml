@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009"
+					   xmlns:s="library://ns.adobe.com/flex/spark"
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   width="388" height="479" initialize="init(event)">
+	<fx:Script>
+		<![CDATA[
+			import com.as3xls.xls.ExcelFile;
+			import com.as3xls.xls.Sheet;
+			
+			import manager.CheckManager;
+			import manager.FileManager;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			import mx.managers.DragManager;
+			
+			protected function init(event:FlexEvent):void
+			{
+				this.addEventListener(NativeDragEvent.NATIVE_DRAG_ENTER,onDragEvent);
+				this.addEventListener(NativeDragEvent.NATIVE_DRAG_DROP,onDragEvent);
+				
+			}
+			
+			protected function onDragEvent(event:NativeDragEvent):void
+			{
+				var dropfiles:Array= event.clipboard.getData(ClipboardFormats.FILE_LIST_FORMAT) as Array;
+				var file:File = dropfiles[0];
+
+				switch(event.type)
+				{
+					case NativeDragEvent.NATIVE_DRAG_ENTER:
+						if (file.type ==".xls"||file.isDirectory)
+							DragManager.acceptDragDrop(this);
+						break;
+					case NativeDragEvent.NATIVE_DRAG_DROP:
+						if (file.type ==".xls")
+						{
+							loadAllFile(file.parent)
+							readFile(file);
+						}
+						else if (file.isDirectory)
+						{
+							loadAllFile(file)
+							readDir(file);
+							Alert.show("生成完成");
+						}
+						break;
+				}
+			}
+			protected function readDir(file:File):void
+			{
+				var arr:Array=file.getDirectoryListing();
+				for each (var file:File in arr)
+				{
+					if (file.isDirectory )
+					{
+						readDir(file)
+					}
+					else if (file.type ==".xls")
+					{
+						readFile(file,false)
+					}
+				}
+			}
+			
+			protected function readFile(file:File,alert:Boolean=true):void
+			{
+				var url:String = file.url;
+				var fileStream:FileStream= new FileStream();
+				fileStream.open(file,FileMode.READ);
+				var bytes:ByteArray=new ByteArray();
+				fileStream.readBytes(bytes,0,fileStream.bytesAvailable);
+				fileStream.close();
+				
+				var dir:File=file.parent;
+				var fileName:String =file.name;
+				fileName = fileName.substr(0,fileName.length - 4) ;// .xls
+				
+				var xls:ExcelFile =new ExcelFile()
+				xls.loadFromByteArray(bytes);
+				var sheets:ArrayCollection =  xls.sheets;
+				
+				var checkObj:Object;
+				//先取出check内容
+				for each(var checkSheet:Sheet in sheets)
+				{
+					//					trace(sheet)
+					if (checkSheet.name=="check")
+					{
+						checkObj=CheckManager.parseCheckSheet(checkSheet);
+					}
+				}
+
+				for each(var sheet:Sheet in sheets)
+				{
+//					trace(sheet)
+					if (sheet.name=="main")
+					{
+						var str:String = FileManager.parseSheet(sheet,dir,fileName,alert,checkObj,javaId.selected);
+						infoTxt.text +=str;
+					}
+				}
+			}
+			
+			
+			private function loadAllFile(dir:File):void
+			{
+				if(!CheckManager.isLoaded())
+				{
+					CheckManager.setLoaded();
+					readCheckDir(dir);
+				}
+				
+			}
+			
+			
+			protected function readCheckFile(file:File):void
+			{
+				var url:String = file.url;
+				var fileStream:FileStream= new FileStream();
+				fileStream.open(file,FileMode.READ);
+				var bytes:ByteArray=new ByteArray();
+				fileStream.readBytes(bytes,0,fileStream.bytesAvailable);
+				fileStream.close();
+				
+				var dir:File=file.parent;
+				var fileName:String =file.name;
+				fileName = fileName.substr(0,fileName.length - 4) ;// .xls
+				
+				var xls:ExcelFile =new ExcelFile()
+				xls.loadFromByteArray(bytes);
+				var sheets:ArrayCollection =  xls.sheets;
+				for each(var sheet:Sheet in sheets)
+				{
+					//					trace(sheet)
+					if (sheet.name=="main")
+					{
+						CheckManager.parseSheet(sheet,fileName);
+					}
+				}
+			}
+
+			protected function readCheckDir(file:File):void
+			{
+				var arr:Array=file.getDirectoryListing();
+				for each (var file:File in arr)
+				{
+					if (file.isDirectory )
+					{
+						readCheckDir(file)
+					}
+					else if (file.type ==".xls")
+					{
+						readCheckFile(file)
+					}
+				}
+			}
+			
+			
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<s:TextArea id="infoTxt" x="4" y="52" width="380" height="396"/>
+	<s:Label x="221" y="9" text="main"/>
+	<s:Label x="289" y="9" text="check"/>
+	<s:CheckBox id="javaId" x="54" y="10" label="创建java" selected="true"/>
+	<s:Label x="206" y="32" text="Both"/>
+	<s:Label x="258" y="32" text="Server"/>
+	<s:Label x="317" y="32" text="Client"/>
+	
+	
+	
+	
+</s:WindowedApplication>

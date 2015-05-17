@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009"
+					   xmlns:s="library://ns.adobe.com/flex/spark"
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   width="255" height="111" applicationComplete="init(event)">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.YFFramework.air.FileUtil;
+			import com.YFFramework.core.net.loader.file.FileLoader;
+			import com.YFFramework.core.net.loader.image_swf.BytesLoader;
+			
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			
+			private var storeDir:File;
+			private var storeName:String;
+			protected function init(event:FlexEvent):void
+			{
+				addEventListener(NativeDragEvent.NATIVE_DRAG_DROP,onDragDrop);
+				addEventListener(NativeDragEvent.NATIVE_DRAG_ENTER,onDragDrop);
+			}
+			private function onDragDrop(e:NativeDragEvent):void
+			{
+				//将拖入的文件以数组形式获得，指定拖入的数据是文件数组形式
+				var files:Array = e.clipboard.getData(ClipboardFormats.FILE_LIST_FORMAT) as Array;
+				//获得拖入的第一个文件
+				var file:File = File(files[0]);
+				switch(e.type)
+				{				
+					case NativeDragEvent.NATIVE_DRAG_ENTER:  
+						if(file.type ==".swf")
+							NativeDragManager.acceptDragDrop(this);
+						break;
+					case NativeDragEvent.NATIVE_DRAG_DROP:
+						storeName=file.name;
+						storeDir=file.parent;
+						openFile(file.url);
+						break;
+				}
+			}
+			
+			private function openFile(url:String):void
+			{
+				var loader:FileLoader=new FileLoader(URLLoaderDataFormat.BINARY);
+				loader.loadCompleteCallBack=complete
+				loader.load(url);
+			}
+			private function complete(loader:FileLoader):void
+			{
+				var bytes:ByteArray=loader.data as ByteArray;
+				bytes.position=0;
+				var totalbytes:ByteArray=new ByteArray();
+				totalbytes.writeInt(512);
+				totalbytes.writeBytes(bytes);
+				FileUtil.createFileByByteArray(storeDir,storeName,totalbytes);
+				Alert.show("生成完成");
+			}
+				
+		]]>
+	</fx:Script>
+<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<s:Label x="26" y="50" text="转化加密512"/>
+</s:WindowedApplication>

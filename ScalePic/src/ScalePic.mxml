@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009"
+					   xmlns:s="library://ns.adobe.com/flex/spark"
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   width="316" height="140" creationComplete="init(event)"
+					   >
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.YFFramework.air.FileUtil;
+			
+			import mx.events.FlexEvent;
+			
+			
+			private var _storeDir:File;
+			
+			
+			
+			protected function init(event:FlexEvent):void
+			{
+				// TODO Auto-generated method stub
+				addEventListener(NativeDragEvent.NATIVE_DRAG_DROP,onDragDrop);
+				addEventListener(NativeDragEvent.NATIVE_DRAG_ENTER,onDragDrop);
+
+			}
+			private function onDragDrop(e:NativeDragEvent):void
+			{
+				//将拖入的文件以数组形式获得，指定拖入的数据是文件数组形式
+				var files:Array = e.clipboard.getData(ClipboardFormats.FILE_LIST_FORMAT) as Array;
+				//获得拖入的第一个文件
+				var file:File = File(files[0]);
+				switch(e.type)
+				{				
+					case NativeDragEvent.NATIVE_DRAG_ENTER:  
+						if(file.isDirectory)
+							NativeDragManager.acceptDragDrop(this);
+						break;
+					case NativeDragEvent.NATIVE_DRAG_DROP:
+						var urlArr:Vector.<String>=FileUtil.getUrlList(file);     
+						var myWidth:int=int(wText.text);
+						var myHeight:int=int(hText.text);
+						var create:ImageCreator=new ImageCreator(myWidth,myHeight);
+						create.create(urlArr);
+						break;
+				}
+			}
+		]]>
+	</fx:Script>
+	<s:Label x="10" y="58" text=" 宽"/>
+	<s:Label x="114" y="62" text="高"/>
+	<s:TextInput id="wText" x="33" y="58" width="69" text="38"/>
+	<s:TextInput id="hText" x="134" y="58" width="57" text="38"/>
+</s:WindowedApplication>

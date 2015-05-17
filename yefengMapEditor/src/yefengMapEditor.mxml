@@ -1,0 +1,1441 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009"
+					   xmlns:s="library://ns.adobe.com/flex/spark"
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   xmlns:ns1="*"
+					   width="1400" height="700" applicationComplete="init(event)" maxWidth="15000" maxHeight="12000"
+					   backgroundColor="0x99FFFF">
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.YFFramework.air.FileUtil;
+			import com.YFFramework.air.flex.FlexUI;
+			import com.YFFramework.core.center.manager.update.TimeOut;
+			import com.YFFramework.core.center.manager.update.UpdateManager;
+			import com.YFFramework.core.event.EventCenter;
+			import com.YFFramework.core.event.ParamEvent;
+			import com.YFFramework.core.event.YFEvent;
+			import com.YFFramework.core.event.YFEventCenter;
+			import com.YFFramework.core.map.rectMap.RectMapConfig;
+			import com.YFFramework.core.map.rectMap.RectMapUtil;
+			import com.YFFramework.core.net.loader.file.FileLoader;
+			import com.YFFramework.core.proxy.StageProxy;
+			import com.YFFramework.core.ui.utils.Draw;
+			import com.YFFramework.core.utils.UtilString;
+			
+			import manager.ActionData;
+			import manager.DirManager;
+			import manager.FileManager;
+			import manager.SWFData;
+			import manager.SourceCache;
+			import manager.XXFileLoader;
+			
+			import model.TypeRoad;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			
+			import view.BigImage;
+			import view.FlexMovieClip;
+			import view.MarkMonster;
+			import view.MarkObject;
+			import view.MonsterZoneClip;
+			import view.RectGridView;
+			
+			public static const None:int=-1;
+			public static const Block:int=0;
+			public static const Walk:int=1;
+			public static const AlphaWalk:int=2;
+			public static const Skip:int=3;
+			
+			//删除路点
+			public static const DeleteRoad:int=4;
+			
+			///添加建筑的状态
+			public static const AddBuilding:int=5;
+			
+			public static const AddNpc:int=6;
+			
+			//添加怪物点
+			public static const AddMonster:int=7;
+			///删除怪点
+			public static const DeleteMonster:int=8;
+			//可飞跃点1 
+			public static const addFly1:int=9;
+			//可飞跃点2 
+			public static const addFly2:int=10;
+			///删除建筑  或者npc
+			public static const DeleteBuild_NPC:int=11;
+			///添加传送点
+			public static const ADD_TransferPt:int=12;
+			///怪物区域点  
+			public static const ADD_MonsterZone:int=13; //{name,x,y} 		
+			
+			//当前状态 
+			private var _state:int=None;
+			
+			
+//			private var _mapLayer:Image;//背景底涂层
+			
+			private var _mapLayer:BigImage;//背景底涂层
+
+			
+			private var _buildLayer:FlexUI;//建筑层  包含npc 背景特效
+			private var _transferLayer:FlexUI;//传送点动画层
+			private var _npcLayer:FlexUI;//npc层
+			private var _gridLayer:RectGridView; //网格层
+			private var _roadLayer:FlexUI;//路点层
+			private var _monsterMarkLayer:FlexUI;// 刷怪点层 
+			private var _monsterZoneLayer:FlexUI; ///怪物点区域层
+			private var _uiLayer:FlexUI;  ///窗口ui层
+			private var _drawLineLayer:FlexUI;//提示层  比如  添加标记点时 给个大小框提示 
+			
+			
+			//保存所有的障碍点信息
+			private var _markArr:Vector.<MarkObject>;
+			//鼠标按下时的   xy  坐标 
+			private var _mouseDownTilePt:Point;
+			private var _mouseDownPxPt:Point;
+			
+			
+			
+			private var _movieView:MovieView;
+			
+			//导入建筑
+			private var _importBuildingFile:File=File.desktopDirectory;
+			///导入npc
+		//	private var _importNPCFile:File=File.desktopDirectory;
+			
+			///建筑列表
+			[Bindable]
+			private var _buildingListArr:ArrayCollection;
+			//保存你建筑内容
+			private var _buildDict:Dictionary;
+			/// npc 列表
+			[Bindable]			
+			private var _npcListArr:ArrayCollection;
+			private var _npcDict:Dictionary;
+			
+			///怪物点区域   用于  小地图位置寻路   为 1个点 需要包含的数据是 {name,x,y} 		
+			/**一种怪物只有一个怪物区域   
+			 */ 
+			private var _monsterZoneDict:Dictionary;
+
+			
+			///怪物类型   根据 id 标志
+	//		private var _monsterDict:Dictionary;
+			///刷怪id 列表
+			[Bindable]
+			private var _monstersArr:ArrayCollection;
+			///怪物点
+			private var _monsterDict:Dictionary;
+			
+			
+			
+			///存储目录
+			private var _storeFile:File=File.desktopDirectory;
+			private var _mapIdName:String="";
+			private var _mapDes:String="";//地图描述 也就是名称
+			private var _mapType:int;//地图类型  1  为普通 2 为单人 副本  3 为多人 。。 后续根据需求修正
+			
+			/// .xx文件 的数据对象
+			private var xxObj:Object;
+			
+			private var _mapInfo:MapInfo;
+			
+			//场景信息
+			private var _buildingInfo:BuildingInfo;
+			
+			private var imageUrl:String;
+			
+			private var _xx2dUrl:String;
+			/**传送点编辑对象
+			 */ 
+		//	private var _transferEditPane:TransferEditPane;
+			
+			private var _transferData:ActionData;
+			protected function init(event:FlexEvent):void
+			{
+				loadTransferPt();
+				StageProxy.Instance.configure(stage);
+				YFEventCenter.Instance.dispatchEventWith("stageInit");
+			}
+			/**加载传送点资源
+			 */ 
+			private function loadTransferPt():void
+			{
+				var url:String="assets/transferPt.yf2d";
+				SourceCache.Instance.addEventListener(url,onTransferPtLoaded);
+				SourceCache.Instance.loadRes(url);
+			}
+			private function onTransferPtLoaded(e:ParamEvent):void
+			{
+				var url:String=e.type;
+				_transferData=SourceCache.Instance.getRes(url) as ActionData;
+				SourceCache.Instance.removeEventListener(url,onTransferPtLoaded);
+				initUI();
+				///传送点
+//				_transferEditPane=new TransferEditPane();
+//				addElement(_transferEditPane);
+//				_transferEditPane.initData(actionData);
+//				_transferEditPane.visible=false;
+				
+				addEvents();
+			}
+				
+			
+			private function initUI():void
+			{
+				if(_buildLayer)disposePrevious();
+				else 
+				{
+//					_mapLayer=new Image();
+					_mapLayer=new BigImage();
+					_buildLayer=new FlexUI(false);
+					_transferLayer=new FlexUI(false);
+					_npcLayer=new FlexUI(false); 
+					_gridLayer=new RectGridView();
+					_roadLayer=new FlexUI(false);
+					_monsterMarkLayer=new FlexUI(false);
+					_monsterZoneLayer=new FlexUI(false);
+					_uiLayer=new FlexUI(false);					
+					_drawLineLayer=new FlexUI(false);
+					rootContainer.addElement(_mapLayer);
+					rootContainer.addElement(_buildLayer);
+					rootContainer.addElement(_transferLayer);
+					rootContainer.addElement(_npcLayer);
+					rootContainer.addElement(_gridLayer);
+					rootContainer.addElement(_roadLayer);
+					rootContainer.addElement(_monsterMarkLayer);
+					rootContainer.addElement(_monsterZoneLayer);
+					rootContainer.addElement(_drawLineLayer);
+					this.addElement(_uiLayer);
+					_movieView=new MovieView();
+					_movieView.x=400;
+					_movieView.y=350
+					_uiLayer.addElement(_movieView);
+					_movieView.visible=false;
+
+					_mapInfo=new MapInfo();
+					_uiLayer.addElement(_mapInfo);
+					_mapInfo.visible=false;
+					_mapInfo.x=300;
+					_mapInfo.y=200;
+					
+					_buildingInfo=new BuildingInfo();
+					_uiLayer.addElement(_buildingInfo);
+					_buildingInfo.visible=false;
+					_buildingInfo.x=400;
+					_buildingInfo.y=200;
+				}
+
+				
+				_markArr=new Vector.<MarkObject>();
+				
+				_buildingListArr=new ArrayCollection([]); 
+				_npcListArr=new ArrayCollection([]);
+				
+				_buildDict=new Dictionary(); 
+				_npcDict=new Dictionary();
+				buildList.dataProvider=_buildingListArr;
+				npcList.dataProvider=_npcListArr;
+				///怪物区域
+				_monsterZoneDict=new Dictionary(); 
+					
+				
+				if(!_monsterDict)resetMonsterData();
+				
+			}
+			///释放前一次的东西
+			private function disposePrevious():void
+			{
+				_buildLayer.removeAllElements();
+				_roadLayer.removeAllElements();
+				_npcLayer.removeAllElements();
+				_transferLayer.removeAllElements();
+				_monsterMarkLayer.removeAllElements();
+				_monsterZoneLayer.removeAllElements();
+			}
+			
+			private function xxLoadComplete(obj:Object,data:Object):void
+			{
+				xxObj=obj;	
+				handleXXFile();
+				_mapLayer.source=imageUrl;
+				
+				var t:TimeOut=new TimeOut(5000,handleAllmark);  ///延时 处理   防止超大地图卡死
+				t.start();
+//				handleAllmark();
+			}
+			
+			//背景地图加载完成
+			private function onImageReady(e:FlexEvent=null):void
+			{
+				
+				var mapW:int=_mapLayer.myWidth
+				var mapH:int=_mapLayer.myHeight;
+//				var rows:int=Math.ceil(mapH/RectMapConfig.tileH);
+//				var columns:int=Math.ceil(mapW/RectMapConfig.tileW);
+				RectMapConfig.gridW=  mapW;//columns*RectMapConfig.tileW;
+				RectMapConfig.gridH=mapH //rows*RectMapConfig.tileH;
+//				RectMapConfig.rows=rows;
+//				RectMapConfig.columns=columns;
+				//开始画网格
+				_gridLayer.drawGrid();  //内部设置网格宽高
+				rootContainer.width=_gridLayer.width;
+				rootContainer.height=_gridLayer.height;
+				
+				_markArr.length=RectMapConfig.rows*RectMapConfig.columns;
+				
+				
+			}
+
+			
+			
+			
+			///打开文件
+			private  function openFile(url:String):void
+			{
+				var suffix:String=UtilString.getSuffix(url);
+				switch(suffix)
+				{
+					case "xx":
+						var exactName:String=UtilString.getExactName(url);
+//						_mapLayer.source=_storeFile.url+"/"+exactName+".jpg";
+						imageUrl=_storeFile.url+"/"+exactName+".jpg";
+						_mapIdName=exactName;
+						_xx2dUrl=url;
+						var xxLoader:XXFileLoader=new XXFileLoader();
+						xxLoader.loadCompleteCallback=xxLoadComplete;
+						xxLoader.initData(url);
+						break;
+					case "monster":   ///文本文件
+					case "json":   ///文本文件
+						var fileLoader:FileLoader=new FileLoader();
+						fileLoader.loadCompleteCallBack=monsterLoaded;
+						fileLoader.load(url);
+						break;
+				}
+				
+			}
+			
+			private function updateMapInfo():void
+			{
+				var obj:Object={};
+				obj.mapName=_mapIdName;
+				obj.des=_mapDes;
+				obj.type=_mapType;
+				obj.gridW=RectMapConfig.gridW
+				obj.gridH=RectMapConfig.gridH
+				obj.rows=RectMapConfig.rows
+				obj.columns=RectMapConfig.columns
+				obj.tileW=RectMapConfig.tileW
+				obj.tileH=RectMapConfig.tileH
+				obj.mouseX=_mapLayer.mouseX;
+				obj.mouseY=_mapLayer.mouseY;
+				var pt:Point=RectMapUtil.getTilePosition(obj.mouseX,obj.mouseY);
+				obj.tileX=pt.x;
+				obj.tileY=pt.y;
+				if(_mapLayer.isSet())
+				{
+					obj.mapW=_mapLayer.myWidth
+					obj.mapH=_mapLayer.myHeight
+//					trace(_mapLayer.maxWidth,_mapLayer.maxHeight);
+
+				}
+				else 
+				{
+					obj.mapW=0;
+					obj.mapH=0;
+				}
+				
+				_mapInfo.update(obj);
+				
+			}
+			private function monsterLoaded(fileLoader:FileLoader):void
+			{
+				resetMonsterData();
+				var data:String=String(fileLoader.data);
+				var monsterObj:Object=JSON.parse(data); 
+				/// 处理 。monster文件
+				//addMonsterMark(int(monsterBox.selectedItem),_mapLayer.mouseX,_mapLayer.mouseY);
+				var id:int;
+				var obj:Object;
+				for(var myId:String in monsterObj)
+				{
+					id=int(myId);
+					for each (obj in monsterObj[id])
+					{
+						addMonsterType(id);
+						addMonsterMark(id,obj.x,obj.y)
+					}
+				}
+			}
+			
+			private function resetMonsterData():void
+			{
+				_monsterDict=new Dictionary();
+				_monstersArr=new ArrayCollection([]);
+				monsterBox.dataProvider=_monstersArr;
+				_monsterMarkLayer.removeAllElements();
+			//	_monsterZoneLayer.removeAllElements();
+			}
+				
+			
+			/** 处理 所有的标记点
+			 */ 
+			private function  handleAllmark(param:Object=null):void
+			{
+				// 地表信息
+				var floorArr:Array=xxObj.floor;//String(xxObj.floor).split("");
+				var len:int=RectMapConfig.columns*RectMapConfig.rows;
+				var id:int;
+				var tilePt:Point;
+				
+				for  (var i:int=0;i!=len;++i)
+				{
+					id=int(floorArr[i]);
+					tilePt=RectMapUtil.getTilePostionByIndex(i);
+					if(id!=TypeRoad.Walk)
+					{
+						//						addMarks(id,tilePt.x,tilePt.y,tilePt.x,tilePt.y);
+						addMarks2(id,tilePt.x,tilePt.y);
+					}
+				}
+
+			}
+			
+			///打开 .xx文件   currentDir 为当前目录 
+			private  function handleXXFile():void
+			{
+				initUI();
+				if(xxObj.mapDes)_mapDes=xxObj.mapDes;
+				else _mapDes=_mapIdName;
+				if(xxObj.type) _mapType=xxObj.type;
+				else _mapType=1;
+				
+				RectMapConfig.tileW=xxObj.tileW;
+				RectMapConfig.tileH=xxObj.tileH;
+				RectMapConfig.columns=xxObj.columns;
+				RectMapConfig.rows=xxObj.rows;
+				_markArr=new Vector.<MarkObject>();
+				_markArr.length=RectMapConfig.rows*RectMapConfig.columns;
+				
+				
+				// 地表信息
+			//	handleAllmark();
+				
+//				var floorArr:Array=xxObj.floor;//String(xxObj.floor).split("");
+//				var len:int=RectMapConfig.columns*RectMapConfig.rows;
+//				var id:int;
+//				var tilePt:Point;
+//				
+//				for  (var i:int=0;i!=len;++i)
+//				{
+//					id=int(floorArr[i]);
+//					tilePt=RectMapUtil.getTilePostionByIndex(i);
+//					if(id!=TypeRoad.Walk)
+//					{
+//						//						addMarks(id,tilePt.x,tilePt.y,tilePt.x,tilePt.y);
+//						addMarks2(id,tilePt.x,tilePt.y);
+//					}
+//				}
+				
+//			
+				
+				////建筑信息
+				/// 先倒入建筑
+				var url:String;
+				var name:String;///文件名称
+				for ( name in xxObj.building)
+				{
+					url=_storeFile.url+"/"+DirManager.BuildingDir+name;
+					trace("url::",url)
+					loadMovie(url,{flag:"building"});
+				}
+				//导入 npc 
+				var npcData:Object;
+				for ( name in xxObj.npc)
+				{
+					npcData=xxObj.npc[name];
+					url=_storeFile.url+"/"+DirManager.npcDir+npcData.url;
+					loadMovie(url,{id:name,flag:"npc"});
+				}
+				
+				////处理传送点 
+				 var skipArr:Array=xxObj.skip; //[{selfX,selfY,x,y,mapId,mapName}]  //selfX selfY 是传送点自己的坐标  x y mapId 是另一个地图的信息 mapName另一个地图的名称
+				 var skipMovie:FlexMovieClip;
+				 var skipMapName:String;
+				 var transfertype:int=1;//传送点类型
+				 for each(var skipData:Object in skipArr)
+				 {
+					 skipMovie=addTransferPtMovie();
+					 skipMovie.x=skipData.selfX;
+					 skipMovie.y=skipData.selfY;
+					 
+					 if(skipData.mapName)skipMapName=skipData.mapName;
+					 else skipMapName=skipData.mapId;
+					 skipMovie.text=skipMapName;
+					 if(skipData.type)transfertype=skipData.type;  //设置传送点类型
+					 skipMovie.myData={x:skipData.x,y:skipData.y,mapId:skipData.mapId,mapName:skipMapName,type:transfertype}
+					 if(skipMovie.myData.type==2)
+					 {
+						 skipMovie.setSpecailColor();
+						 skipMovie.toolTip="特殊==2"
+					 }
+					 else
+					 {
+						 skipMovie.toolTip="普通==1"
+					 }
+				 }
+				 ///处理怪物点区域配置
+				 var monsterZoneArr:Array=xxObj.monsterZone;//[{name,x,y},{...},{...}]
+				 var monsterZoneClip:MonsterZoneClip;
+				 for each(var monsterZoneData:Object in monsterZoneArr )
+				 {
+					 addMonsterType(monsterZoneData.id);
+					 monsterZoneClip=addMonsterZoneClip(monsterZoneData.id);
+					 monsterZoneClip.myLabel.text=monsterZoneData.name;
+					 monsterZoneClip.x=monsterZoneData.x;
+					 monsterZoneClip.y=monsterZoneData.y;
+				 }
+				 	 
+				 
+				 
+				//当所有资源加载完后再进行处理
+				UpdateManager.Instance.frame101.regFunc(checkAllLoadComplete);
+				
+//				_mapLayer.source=imageUrl;
+			} 
+			
+			private function checkAllLoadComplete():void
+			{
+				if(SourceCache.Instance.isAllComplete())
+				{
+					UpdateManager.Instance.frame101.delFunc(checkAllLoadComplete);
+					var url:String;
+					var name:String;///文件名称
+					var data:Object;
+					var movie:FlexMovieClip;
+					var swfData:SWFData;
+					var suffix:String;
+					var actionData:ActionData;
+					for ( name in xxObj.building)
+					{
+						url=_storeFile.url+"/"+DirManager.BuildingDir+name;
+						for each(data in xxObj.building[name])
+						{
+							
+							swfData=SourceCache.Instance.getRes(url) as SWFData;
+							actionData=SourceCache.Instance.getRes(url) as ActionData;
+							suffix=UtilString.getSuffix(url);
+							movie=addBuild(name,actionData,swfData,suffix);
+							
+							
+							movie.x=data.x;
+							movie.y=data.y;
+							movie.scaleX=data.scaleX;
+							movie.scaleY=data.scaleY;
+							movie.rotation=data.rotation;
+
+						}
+					}
+					//导入 npc 
+					
+					for ( name in xxObj.npc)
+					{
+						data=xxObj.npc[name];
+						url=_storeFile.url+"/"+DirManager.npcDir+data.url;
+						movie=addNpc(name,url,SourceCache.Instance.getRes(url));
+						movie.x=data.x;
+						movie.y=data.y;
+//						for each(data in xxObj.npc[name])
+//						{
+//							movie=addNpc(name,SourceCache.Instance.getRes(url));
+//							movie.x=data.x;
+//							movie.y=data.y;
+//						}
+					}
+				}
+			}
+			
+			
+			private function addEvents():void
+			{
+				EventCenter.Instance.dispatchEvent(new Event("stageInit"));
+				UpdateManager.Instance.framePer.regFunc(updateMapInfo);
+				StageProxy.Instance.configure(stage);
+
+//				_mapLayer.addEventListener(FlexEvent.READY,onImageReady);
+				_mapLayer.imageLoadedCall=onImageReady;
+				
+				
+				EventCenter.Instance.addEventListener(NewPane.SendConfig,onParamEvent);
+				rootContainer.addEventListener(MouseEvent.MOUSE_DOWN,onMouseEvent);
+				rootContainer.addEventListener(MouseEvent.MOUSE_UP,onMouseEvent);
+				rootContainer.addEventListener(MouseEvent.MOUSE_MOVE,onMouseEvent);
+				_importBuildingFile.addEventListener(Event.SELECT,onFileSelect);
+			//	_importNPCFile.addEventListener(Event.SELECT,onFileSelect);
+				addEventListener(Event.ENTER_FRAME,onFrame);
+				
+				///增加刷怪点
+				EventCenter.Instance.addEventListener(MonsterType.CreateMonsterType,onParamEvent);
+				
+				////添加导入npc功能
+				YFEventCenter.Instance.addEventListener(NPCPane.ImportNPC,onNPCImport);
+				
+				///托物体进来 
+				addEventListener(NativeDragEvent.NATIVE_DRAG_DROP,onDragDrop);
+				addEventListener(NativeDragEvent.NATIVE_DRAG_ENTER,onDragDrop);
+				
+				
+				//// 层显示控制  
+				EventCenter.Instance.addEventListener(LayerControl.BuilderLayer,onLayerControl);
+				EventCenter.Instance.addEventListener(LayerControl.GridLayer,onLayerControl);
+				EventCenter.Instance.addEventListener(LayerControl.MapLayer,onLayerControl);
+				EventCenter.Instance.addEventListener(LayerControl.MonsterLayer,onLayerControl);
+				EventCenter.Instance.addEventListener(LayerControl.NpcLayer,onLayerControl);
+				EventCenter.Instance.addEventListener(LayerControl.RoadLayer,onLayerControl);
+
+				NativeApplication.nativeApplication.addEventListener(InvokeEvent.INVOKE, onInvoke); ///双击文件打开
+				
+			}
+			
+			private function onNPCImport(e:YFEvent):void
+			{
+				var npcData:Object=e.param;
+				FileUtil.copyFileToAsync(npcData.file,_storeFile.url+"/"+DirManager.npcDir+npcData.name);
+				delete npcData.file;
+				delete npcData.name;
+				npcData.flag="npc"
+				loadMovie(npcData.url,npcData);
+			}
+			
+			private function onInvoke(e:InvokeEvent):void
+			{
+				var arr:Array=e.arguments;
+				if(arr.length>0)
+				{
+					var url:String=arr[0];
+					var file:File=File.desktopDirectory;
+					file.nativePath=url;
+					_storeFile=file.parent;
+					var changeUrlFile:File=File.desktopDirectory;
+					changeUrlFile.nativePath=url;
+					url=changeUrlFile.url;
+				//	_mapIdName=UtilString.getExactName(url);
+					openFile(file.url);
+				}
+			}
+
+			private function onLayerControl(e:ParamEvent):void
+			{
+				var bool:Boolean=Boolean(e.param);
+				switch(e.type)
+				{
+					case LayerControl.BuilderLayer:
+						_buildLayer.visible=bool;
+						_transferLayer.visible=bool;
+						break;
+					case LayerControl.GridLayer:
+						_gridLayer.visible=bool;
+						break;
+					case LayerControl.MapLayer:
+						_mapLayer.visible=bool;
+						break;
+					case LayerControl.MonsterLayer:
+						_monsterMarkLayer.visible=bool;
+						_monsterZoneLayer.visible=bool;
+						break;
+					case LayerControl.NpcLayer:
+						_npcLayer.visible=bool;
+						break;
+					case LayerControl.RoadLayer:
+						_roadLayer.visible=bool;
+						break;
+
+				}
+						
+				
+			}
+			private function onDragDrop(e:NativeDragEvent):void
+			{
+				//将拖入的文件以数组形式获得，指定拖入的数据是文件数组形式
+				var files:Array = e.clipboard.getData(ClipboardFormats.FILE_LIST_FORMAT) as Array;
+				//获得拖入的第一个文件
+				var file:File = File(files[0]);
+				switch(e.type)
+				{				
+					case NativeDragEvent.NATIVE_DRAG_ENTER:  
+						if(file.type==".xx"||file.type==".monster" ||file.type==".json")
+							NativeDragManager.acceptDragDrop(this);
+						break;
+					case NativeDragEvent.NATIVE_DRAG_DROP:
+						_storeFile=file.parent;
+						_mapIdName=UtilString.getExactName(file.url);
+						openFile(file.url);
+						break;
+				}
+			}  
+			private function onFrame(e:Event):void
+			{
+				UpdateManager.Instance.update();
+			}
+			private function onFileSelect(e:Event):void
+			{
+				switch (e.currentTarget)
+				{
+					case _importBuildingFile:  /// mc
+						FileUtil.copyFileToAsync(_importBuildingFile,_storeFile.url+"/"+DirManager.BuildingDir+_importBuildingFile.name);
+						loadMovie(_importBuildingFile.url,{flag:"building"});
+						break;
+			//		case _importNPCFile:
+//						FileUtil.copyFileToAsync(_importNPCFile,_storeFile.url+"/"+DirManager.npcDir+_importNPCFile.name);
+//						loadMovie(_importNPCFile.url);
+						break;
+				}
+			}
+			
+			///加载外部信息
+			private function  loadMovie(url:String,data:Object=null):void
+			{
+				SourceCache.Instance.addEventListener(url,resLoaded);
+				SourceCache.Instance.loadRes(url,data);
+			}
+			private function resLoaded(e:ParamEvent):void
+			{
+				var url:String=e.type;
+				var actionData:ActionData=SourceCache.Instance.getRes(url) as ActionData;
+				var obj:Object;
+				
+				var suffix:String=UtilString.getSuffix(url);
+				var swfData:SWFData=null
+				if(suffix=="swf")
+				{
+					swfData=SourceCache.Instance.getRes(url) as SWFData;
+				}
+
+				
+				var index:int=url.lastIndexOf(".");
+				index=url.lastIndexOf("/");
+				var name:String=url.substring(index+1);
+				var dataArr:Vector.<Object>=e.param as Vector.<Object>;
+				var myData:Object=dataArr[0];
+			//	switch(suffix)
+				switch(myData.flag)
+				{
+				//	case "swf":///建筑
+					case "building":
+					obj={name:name,data:actionData,swfData:swfData,suffix:suffix}
+					_buildingListArr.addItem(obj);
+					if(!_buildDict[obj.name])_buildDict[obj.name]=[];
+						break;
+				//	case"chitu":  // npc 
+					case "npc":
+						var npcDataArr:Vector.<Object>=e.param as Vector.<Object>;
+						var npcData:Object=npcDataArr[0];
+						name=npcData.id.toString(); ///以id 作为名称
+						obj={name:name,data:actionData,url:url}
+						_npcListArr.addItem(obj);
+					//	if(!_npcDict[obj.name])_npcDict[obj.name]=[];
+					//	_npcDict[name]=npcData;
+						break;
+				}
+				
+			}
+			
+			private var _mouseDown:Boolean;
+			private function onMouseEvent(e:MouseEvent):void
+			{
+				if(!_mapLayer.isSet()) return ;
+				if(_state==None) return ;  
+				var id:int=_state;
+				var pt:Point;
+				switch(e.type)
+				{
+					case MouseEvent.MOUSE_UP:
+						_mouseDown=false;
+						if(_mouseDownTilePt==null) return ;
+						pt=RectMapUtil.getTilePosition(_mapLayer.mouseX,_mapLayer.mouseY);
+						
+						
+						switch(_state)
+						{
+							///添加标记点
+							case Block:
+								addMarks(TypeRoad.Block,_mouseDownTilePt.x,_mouseDownTilePt.y,pt.x,pt.y);
+								break;
+							case Walk:
+								addMarks(TypeRoad.Walk,_mouseDownTilePt.x,_mouseDownTilePt.y,pt.x,pt.y);
+								break;
+							case AlphaWalk:
+								addMarks(TypeRoad.AlphaWalk,_mouseDownTilePt.x,_mouseDownTilePt.y,pt.x,pt.y);
+								break;
+							case Skip:
+								addMarks(TypeRoad.Skip,_mouseDownTilePt.x,_mouseDownTilePt.y,pt.x,pt.y);
+								break;
+							case addFly1:
+								addMarks(TypeRoad.WaterPt,_mouseDownTilePt.x,_mouseDownTilePt.y,pt.x,pt.y);
+								break;
+							case addFly2:
+								addMarks(TypeRoad.Fly2,_mouseDownTilePt.x,_mouseDownTilePt.y,pt.x,pt.y);
+								break;
+							case DeleteRoad:
+								removemarks(_mouseDownTilePt.x,_mouseDownTilePt.y,pt.x,pt.y);  ///删除标记点
+								break;
+							case AddBuilding:
+							case AddNpc:  //添加建筑  或者 npc 
+							case ADD_TransferPt: ///tia 
+							case ADD_MonsterZone:///添加 怪物区域点
+								DragManager.Instance.stopDrag();
+								_state=None;
+								break;
+							case AddMonster:
+								if(monsterBox.selectedItem)
+								{
+									addMonsterMark(int(monsterBox.selectedItem),_mapLayer.mouseX,_mapLayer.mouseY);
+								}		
+								break;
+							case DeleteMonster:
+								if(e.target is MarkMonster) deleteMonster(e.target as MarkMonster);
+								break;
+							case DeleteBuild_NPC:  
+								var myFlexMovieClip:FlexMovieClip=parentIsFlexMovieClip(e.target as DisplayObject);
+							//	if(e.target is FlexMovieClip) 
+								if(myFlexMovieClip)
+								{
+									var myMovie:FlexMovieClip=myFlexMovieClip ;// FlexMovieClip(e.target);
+									var myIndex:int;
+									/// 建筑
+									if(myMovie.parent==_buildLayer)
+									{
+										myIndex=_buildDict[myMovie.name].indexOf(myMovie);
+										_buildDict[myMovie.name].splice(myIndex,1);
+										(myMovie.parent as Group).removeElement(myMovie);
+									}
+									//npc
+									else if(myMovie.parent==_npcLayer)
+									{
+//										myIndex=_npcDict[myMovie.name].indexOf(myMovie);
+//										_npcDict[myMovie.name].splice(myIndex,1);
+										delete _npcDict[myMovie.name];
+										(myMovie.parent as Group).removeElement(myMovie);
+									}
+									///传送点层
+									else if(myMovie.parent==_transferLayer)
+									{
+										removeTransferMovie(myMovie);
+									}
+								}
+								else if(e.target is MonsterZoneClip)
+								{
+									removeMosterZoneClip(e.target as MonsterZoneClip);
+								}
+									
+										
+								break; 
+						}
+						
+						_mouseDownTilePt=null;
+						_mouseDownPxPt=null;
+						_drawLineLayer.graphics.clear();
+						break;
+					case MouseEvent.MOUSE_DOWN:
+							pt=RectMapUtil.getTilePosition(_mapLayer.mouseX,_mapLayer.mouseY);
+							_mouseDownTilePt=new Point();
+							_mouseDownTilePt.x=pt.x;
+							_mouseDownTilePt.y=pt.y;
+							_mouseDownPxPt=new Point();
+							_mouseDownPxPt.x=_mapLayer.mouseX;
+							_mouseDownPxPt.y=_mapLayer.mouseY;
+							
+							_mouseDown=true
+						break;
+					case MouseEvent.MOUSE_MOVE:
+						if(_mouseDownTilePt&&_state!=AddMonster) // 当  鼠标按下时
+						{
+							updateTipsDraw(_mouseDownPxPt.x,_mouseDownPxPt.y,_mapLayer.mouseX,_mapLayer.mouseY);
+						}
+						
+//						if(_state==AddMonster&&_mouseDown)
+//						{
+//							///增加 monster
+//							if(monsterBox.selectedItem)
+//							{
+//								addMonsterMark(int(monsterBox.selectedItem),_mapLayer.mouseX,_mapLayer.mouseY);
+//							}		
+//
+//						}
+
+						break;
+					
+				}
+			}
+			//是否为flexMovieCLip
+			private function parentIsFlexMovieClip(obj:DisplayObject):FlexMovieClip
+			{
+				var current:DisplayObject=obj;
+				while((current is FlexMovieClip==false)&&current)
+				{
+					current=current.parent 
+				}
+				return current as FlexMovieClip;
+			}
+			
+			///添加怪物点
+			private function addMonsterMark(id:int,x:int,y:int):MarkMonster
+			{
+				var monsterMark:MarkMonster=new MarkMonster(id,x,y);
+				_monsterMarkLayer.addElement(monsterMark);
+				_monsterDict[id].push(monsterMark);
+				return monsterMark;
+			}
+			
+			private function deleteMonster(monsterMark:MarkMonster):void
+			{
+				var index:int=_monsterDict[monsterMark.myId].indexOf(monsterMark);
+				_monsterDict[monsterMark.myId].splice(index,1);///数组中删除
+				_monsterMarkLayer.removeElement(monsterMark);
+				monsterMark.dispose();
+			}
+			
+			/**删除某种类型的怪物
+			 */ 
+			private function deleteAllMonster(id:int):void
+			{
+				 var arr:Vector.<MarkMonster>=_monsterDict[id];
+//				 var copyArr:Vector.<MarkMonster>=new Vector.<MarkMonster>();
+//				 copyArr= copyArr.concat(arr);
+				 for each(var monsterMark:MarkMonster in arr)
+				 {
+					 _monsterMarkLayer.removeElement(monsterMark);
+					 monsterMark.dispose();
+				 }
+				 _monsterDict[id]=null;
+				 delete _monsterDict[id];
+				 var index:int=_monstersArr.getItemIndex(id);
+				 if(index!=-1)_monstersArr.removeItemAt(index);
+				 monsterBox.selectedIndex=0;
+			}
+			
+			private function updateTipsDraw(startX:int,startY:int,endX:int,endY:int):void
+			{
+				var w:int=(endX-startX);
+				var h:int=(endY-startY);
+				Draw.DrawRect(_drawLineLayer.graphics,w,h,0xFF33333,0.6,startX,startY,1);
+			}
+			
+			private function onParamEvent(e:ParamEvent):void
+			{
+				switch(e.type)
+				{
+					case NewPane.SendConfig:
+						initUI();
+						handlerNewpaneConfig(e.param);
+						break;
+					///创建刷怪顶点
+					case MonsterType.CreateMonsterType:
+						_state=AddMonster;
+						var id:int=int(e.param);
+						addMonsterType(id);
+						break;
+
+				}
+			}
+			///增加怪物点类型
+			private function addMonsterType(id:int):void
+			{
+				if(!_monsterDict[id])
+				{
+					_monsterDict[id]=new Vector.<MarkMonster>();
+					_monstersArr.addItem(id);
+				}
+				monsterBox.selectedItem=id;
+			}
+			
+			/// 处理新建对象
+			private function handlerNewpaneConfig(obj:Object):void
+			{
+				RectMapConfig.tileW=obj.tileW;
+				RectMapConfig.tileH=obj.tileH;
+				_mapLayer.source=obj.url;
+				_storeFile.url=obj.storeUrl;
+				_mapIdName=obj.name;
+				_mapDes=obj.des;
+				_mapType=obj.type;
+			}
+			
+			protected function onClick(event:MouseEvent):void
+			{
+				if(_state==AddBuilding||_state==AddNpc) return ;
+
+				switch(event.currentTarget)
+				{
+					//新建文件
+					case newFileBtn:
+						var newFile:NewPane=new NewPane();
+						PopUpManager.addPopUp(newFile,this);
+						PopUpManager.centerPopUp(newFile);
+						break;
+					case blockBtn:
+						_state=Block;
+						break;
+					case throughBtn:
+						_state=Walk;
+						break;
+					case skipBtn:
+						_state=Skip;
+						break;
+					case alphaBtn:
+						_state=AlphaWalk;
+						break;
+					case flyBtn1:  //飞跃点1 
+						_state=addFly1;
+						break;
+					case flyBtn2:  //飞跃点2 
+						_state=addFly2;
+						break;
+					case deleteRoadBtn:
+						_state=DeleteRoad;
+						break;
+					case noneBtn:
+						_state=None;
+						_buildingInfo.setMovie(null);
+						break;
+					case importBuildBtn:
+						_state=None;
+						///导入外部建筑   格式是 swf  
+						var buildFilters:FileFilter=new FileFilter("avatarMovie", "*.yf2d;*.ActionData;*.swf");
+						_importBuildingFile.browse([buildFilters]);
+						break;
+					///添加建筑
+					case addBuilding:
+						if(!buildList.selectedItem) return ;
+						_state=AddBuilding;
+						var buildObj:Object=buildList.selectedItem;  //={name:name,data:actionData,swfData:swfData,suffix:suffix}
+						var movie:FlexMovieClip=addBuild(buildObj.name,buildObj.data,buildObj.swfData as SWFData,buildObj.suffix);
+						DragManager.Instance.startDrag(movie,_buildLayer);
+						break;
+					case addNpcBtn:
+						if(!npcList.selectedItem) return ;
+						_state=AddNpc;
+						var npcObj:Object=npcList.selectedItem
+//						var npcMovie:FlexMovieClip=createMovie(npcList.selectedItem.data);
+//						npcMovie.name=npcObj.name;
+//						_npcLayer.addElement(npcMovie);
+//						_npcDict[npcObj.name].push(npcMovie);
+						var npcMovie:FlexMovieClip=addNpc(npcObj.name,npcObj.url,npcObj.data);
+						if(npcMovie)DragManager.Instance.startDrag(npcMovie,_npcLayer);
+						break;
+
+					case importNpcBtn:
+						_state=None;
+						///导入外部npc 格式是 .chitu
+//						var npcdFilters:FileFilter=new FileFilter("chitu", "*.chitu");
+//						_importNPCFile.browse([npcdFilters]);
+						
+						var npcPane:NPCPane=new NPCPane();
+						PopUpManager.addPopUp(npcPane,this,true);
+						PopUpManager.centerPopUp(npcPane);
+						break;
+					
+					case addTransferMovieBtn:  ///添加 传送点
+						_state=ADD_TransferPt;
+						var transferEditInfo:TransferEditInfo=new TransferEditInfo();
+						transferEditInfo.callBack=transferEditInfoCallBack;
+						PopUpManager.addPopUp(transferEditInfo,this,true);
+						PopUpManager.centerPopUp(transferEditInfo);
+						break;
+
+					case addMonsterBtn:   ///添加怪物点
+						_state=AddMonster;
+						break;
+					case addMonsterTypeBtn:  ///添加怪物点类型
+					//	_state=None;
+						var monsterType:MonsterType=new MonsterType();
+						PopUpManager.addPopUp(monsterType,this,true);
+						PopUpManager.centerPopUp(monsterType);
+						break;
+					case deleteMonsterBtn:
+						_state=DeleteMonster;
+						break;
+					case deleteBuild_npcBtn:
+						_state=DeleteBuild_NPC;
+						break;
+					//保存文件
+					case saveBtn:
+						if(_markArr&&_buildDict&&_npcDict)
+						{
+							var fileMake:FileManager=new FileManager();
+							fileMake.createMapFile(_mapType,_mapDes,_storeFile,_mapIdName,_markArr,_buildDict,_npcDict,_transferLayer,_monsterZoneDict);
+							//生成 npc 文件 xml 形式 用于策划填表进行修改
+							FileManager.handleNpcToCSV(_npcDict,_storeFile,_mapIdName);
+							///创建 mapScene.csv文件
+							var w:int=_mapLayer.myWidth;//=null?0:_mapLayer.bitmapData.width;
+							var h:int=_mapLayer.myHeight;//==null?0:_mapLayer.bitmapData.height;
+							FileManager.createMapSceneCSV(_mapType,_storeFile,w,h,_mapIdName,_mapDes,_transferLayer);
+							
+						}
+						break; 
+					case saveMonster:
+						var monsterMake:FileManager=new FileManager();
+						monsterMake.createMonster(_storeFile,_mapIdName,_monsterDict);
+					//	monsterMake.createMonsterToBson(_storeFile,_mapName,_monsterDict);
+						Alert.show("怪物配置生成完成");
+						break;
+					case showMapInfoBtn:
+						_mapInfo.visible=true;
+						break;
+					case showBuildingInfobtn:
+						_buildingInfo.visible=true;
+						break;
+					case layerControlBtn:
+						layerControl.visible=true;
+						break;
+//					case editMoviebtn:
+//						///编辑影片剪辑
+//						_transferEditPane.visible=true;
+//						break;
+					
+					case deleteMonsterTypeBtn:  ///删除当前所选的怪物种类
+						Alert.show("删除该类型怪物?","提示",Alert.OK|Alert.CANCEL,null,deleteMonsterTypeHandle);
+						break;
+					case monsterZoneBtn:  ///刷怪区域
+						if(_monstersArr.length>0)
+						{
+							_state=ADD_MonsterZone;
+							var id:int=int(monsterBox.selectedItem);
+							var monsterZoneMovie:MonsterZoneClip=addMonsterZoneClip(id);
+							DragManager.Instance.startDrag(monsterZoneMovie,_monsterZoneLayer);
+						}
+						break;
+				}  
+			}
+			private function deleteMonsterTypeHandle(event:CloseEvent):void
+			{
+				if (event.detail==Alert.OK)
+				{
+					var deleteId:int=int(monsterBox.selectedItem);
+					deleteAllMonster(deleteId);
+					removeMosterZoneClip2(deleteId);
+				}
+			}
+			
+			private function addMonsterZoneClip(id:int):MonsterZoneClip
+			{
+				var monsterZoneClip:MonsterZoneClip;
+				if(_monsterZoneDict[id])
+				{
+					  //删除原来的
+					monsterZoneClip=_monsterZoneDict[id];
+					removeMosterZoneClip(monsterZoneClip);
+				}
+				monsterZoneClip=new MonsterZoneClip();
+				monsterZoneClip.myId=id;
+				_monsterZoneDict[id]=monsterZoneClip;
+				_monsterZoneLayer.addElement(monsterZoneClip);
+				return monsterZoneClip;
+			}
+			private function removeMosterZoneClip(monsterZoneClip:MonsterZoneClip):void
+			{
+				var id:int=monsterZoneClip.myId;
+				delete _monsterZoneDict[id];
+				_monsterZoneLayer.removeElement(monsterZoneClip);
+				monsterZoneClip.dispose();
+			}
+			private function removeMosterZoneClip2(id:int):void
+			{
+				var monsterZoneClip:MonsterZoneClip=_monsterZoneDict[id];
+				if(monsterZoneClip)removeMosterZoneClip(monsterZoneClip);
+
+			}
+
+			
+			
+			
+			/**创建传送点
+			 */ 	
+			private function transferEditInfoCallBack(data:Object):void
+			{
+				_state=ADD_TransferPt;
+				var movie:FlexMovieClip=addTransferPtMovie();
+				movie.myData=data;
+				var name:String;
+				if(movie.myData.mapName)name=movie.myData.mapName;
+				else name=movie.myData.mapId;
+				movie.text=name;
+				if(data.type==2)
+				{
+					movie.setSpecailColor();
+					movie.toolTip="特殊==2"
+				}
+				else
+				{
+					movie.toolTip="普通==1"
+				}
+				DragManager.Instance.startDrag(movie,_buildLayer);
+			}
+			/**添加传送点
+			 */ 
+			private function addTransferPtMovie():FlexMovieClip
+			{
+				var movie:FlexMovieClip=createMovie(_transferData);
+				_transferLayer.addElement(movie);
+				return movie;
+			}
+			
+			/**删除影片
+			 */ 
+			private function removeTransferMovie(movie:FlexMovieClip):void
+			{
+				_transferLayer.removeElement(movie);
+				movie.removeEventListener(MouseEvent.MOUSE_DOWN,onBuildingSelect);
+			}
+			
+			
+			// data 是  ActionData  swfData是 suffix
+			private function createMovie(data:Object,swfData:SWFData=null,suffix:String=null):FlexMovieClip
+			{
+				var movie:FlexMovieClip=new FlexMovieClip();
+				movie.buttonMode=true;
+				movie.start();
+				
+				if(suffix=="swf")
+				{
+					movie.initData(swfData.getData() as MovieClip);
+				}
+				else 
+				{
+					movie.initData(data);
+				}
+				movie.playDefault();
+				return movie;
+			}
+			
+			//{name:name,data:actionData,swfData:swfData,suffix:suffix}
+			private function addBuild(name:String,data:ActionData,swfData:SWFData,suffix:String):FlexMovieClip
+			{
+				var movie:FlexMovieClip=createMovie(data,swfData,suffix);
+				movie.name=name;
+				_buildLayer.addElement(movie);
+				_buildDict[name].push(movie);
+				movie.addEventListener(MouseEvent.MOUSE_DOWN,onBuildingSelect);
+				return movie;
+			}
+			private function onBuildingSelect(e:MouseEvent):void
+			{
+				_buildingInfo.setMovie(e.currentTarget as FlexMovieClip);
+			}
+				
+			// data 是  ActionData
+			/**id 是 npc id  也就是 动画名     url 是动画的地址
+			 */ 
+			private function addNpc(id:String,url:String,data:Object):FlexMovieClip
+			{
+				if(_npcDict[id]==null)
+				{
+					var npcMovie:FlexMovieClip=createMovie(data);
+					npcMovie.name=id;
+					_npcLayer.addElement(npcMovie);
+					//		_npcDict[name].push(npcMovie);
+					///传递数据 
+					npcMovie.myData=url;				
+					_npcDict[id]=npcMovie;
+					return npcMovie;
+				}
+				else 
+				{
+					_state=None;
+					Alert.show("NPC不准重复添加");1
+				}
+				return null;
+			}
+			
+			/** 添加传送点
+			 */ 
+//			private function addTransferPt():TransferPtClip
+//			{
+//				var movie:TransferPtClip=new TransferPtClip(_transferEditPane.movieX,_transferEditPane.movieY);
+//				_transferLayer.addElement(movie);
+//				return movie;
+//			}
+			/**移除传送点
+			 */ 
+//			private function removeTransferPt(movie:TransferPtClip):void
+//			{
+//				_transferLayer.removeElement(movie);
+//				movie.dispose();
+//			}
+			
+			
+			private function addMarks2(id:int,tileX:int,tileY:int):void
+			{
+				var index:int=RectMapUtil.getTileIndex(tileX,tileY);
+				_markArr[index]=new MarkObject(id,tileX,tileY);
+				_roadLayer.addElement(_markArr[index]);
+			}
+
+			private function addMarks(id:int,startTileX:int,startTileY:int,endTileX:int,endTileY:int):void
+			{
+				var temp:int;				
+				if(startTileX>endTileX)
+				{
+					temp=startTileX;
+					startTileX=endTileX;
+					endTileX=temp;
+				}
+				if(startTileY>endTileY)
+				{
+					temp=startTileY;
+					startTileY=endTileY;
+					endTileY=temp;
+				}
+				var index:int;
+				if(endTileX>=RectMapConfig.columns) endTileX = RectMapConfig.columns-1;
+				if(endTileY>=RectMapConfig.rows) endTileY = RectMapConfig.rows-1;
+
+				for(var i:int=startTileX;i<=endTileX;++i)
+				{
+					for(var j:int=startTileY;j<=endTileY;++j)
+					{
+						index=RectMapUtil.getTileIndex(i,j)//j*RectMapConfig.columns+i;
+						if(index>=RectMapConfig.Len) continue;
+						if(!_markArr[index])
+						{
+							_markArr[index]=new MarkObject(id,i,j);
+							_roadLayer.addElement(_markArr[index]);
+						}
+						else 
+						{
+							if(_markArr[index].myId!=id) 
+							{
+								_roadLayer.removeElement(_markArr[index]);
+								_markArr[index]=new MarkObject(id,i,j);
+								_roadLayer.addElement(_markArr[index]);
+							}
+						}
+					}
+				}
+			}
+			
+			private function removemarks(startTileX:int,startTileY:int,endTileX:int,endTileY:int):void
+			{
+				var temp:int;				
+				if(startTileX>endTileX)
+				{
+					temp=startTileX;
+					startTileX=endTileX;
+					endTileX=temp;
+				}
+				if(startTileY>endTileY)
+				{
+					temp=startTileY;
+					startTileY=endTileY;
+					endTileY=temp;
+				}
+				if(endTileX>=RectMapConfig.columns) endTileX = RectMapConfig.columns-1;
+				if(endTileY>=RectMapConfig.rows) endTileY = RectMapConfig.rows-1;
+				var index:int;
+				for(var i:int=startTileX;i<=endTileX;++i)
+				{
+					for(var j:int=startTileY;j<=endTileY;++j)
+					{
+						index=RectMapUtil.getTileIndex(i,j);
+						if (index>=RectMapConfig.Len) continue;
+						if(_markArr[index]) 
+						{
+							_roadLayer.removeElement(_markArr[index]);
+							_markArr[index]=null;
+						}
+					}
+				}
+			}
+			
+			
+			
+			protected function onListChange(event:Event):void
+			{
+				var select:Object;
+				switch(event.currentTarget)
+				{
+					case buildList:
+						///建筑 
+						select=buildList.selectedItem;
+						if(select)  //					obj={name:name,data:actionData,swfData:swfData,suffix:suffix}
+						{
+							var suffix:String=select.suffix;
+							if(suffix=="swf")
+							{
+								var swfData:SWFData=select.swfData as SWFData;
+								_movieView.source(swfData.getData() as MovieClip);
+							}
+							else ///actionData  
+							{
+								_movieView.source(select.data);
+							}
+							_movieView.visible=true;
+						}
+						break;
+					case npcList:
+						select=npcList.selectedItem;
+						if(select)
+						{
+							_movieView.source(select.data);
+							_movieView.visible=true;
+						}
+						break;
+				}
+				
+			}
+			
+		]]>
+	</fx:Script>
+	<s:Scroller x="10" y="37" width="1200" height="620">
+		<s:Group width="100%" height="100%">
+			<s:BorderContainer  id="rootContainer" width="100%" height="100%">
+			</s:BorderContainer>
+		</s:Group>
+	</s:Scroller>
+
+	<s:List id="buildList" x="1231" y="401" width="160" height="245"
+			change="onListChange(event)" labelField="name" click="onListChange(event)"></s:List>
+	<s:List id="npcList" x="1229" y="125" width="160" height="245" 
+			change="onListChange(event)" labelField="name" click="onListChange(event)"></s:List>
+
+
+	<s:Button id="newFileBtn" x="2" y="6" width="49" label="新建" click="onClick(event)"/>
+	<s:Button id="saveBtn" x="50" y="6" width="49" label="保存" click="onClick(event)"/>
+	<s:Button id="saveMonster" x="1100" y="6" width="83" label="保存怪物点" click="onClick(event)"/>
+	<s:Button id="blockBtn" x="98" y="6" width="63" label="障碍点" click="onClick(event)"/>
+	<s:Button id="throughBtn" x="161" y="6" width="59" label="可走点" click="onClick(event)"/>
+	<s:Button id="skipBtn" x="281" y="6" width="65" label="跳转点" click="onClick(event)"/>
+	<s:Button id="flyBtn2" x="415" y="6" label="飞跃点2" click="onClick(event)"/>
+	<s:Button id="alphaBtn" x="220" y="6" width="61" label="消隐点" click="onClick(event)"/>
+	<s:Button id="importBuildBtn" x="1239" y="650" label="导入建筑"
+			  click="onClick(event)"/>
+	<s:Button id="addBuilding" x="1320" y="650" label="添加" click="onClick(event)"/>
+	<s:Button id="importNpcBtn" x="1240" y="102" height="22" label="导入npc" click="onClick(event)"/>
+	<s:Button id="addNpcBtn" x="1313" y="102" label="添加" click="onClick(event)"/>
+	<s:Button id="layerControlBtn" x="1322" y="35" label="显示层" click="onClick(event)"/>
+	<s:Button id="showMapInfoBtn" x="1240" y="36" width="73" label="地图信息" click="onClick(event)"/>
+	<s:Button id="showBuildingInfobtn" x="1191" y="5" width="73" label="建筑信息" click="onClick(event)"/>
+	<s:ComboBox id="monsterBox" x="628" y="5" width="79"/>
+	<s:Button id="addMonsterBtn" x="802" y="6" label="刷怪点"  click="onClick(event)"/>
+	<s:Button id="deleteMonsterBtn" x="874" y="6" label="删除怪点"  click="onClick(event)"/>
+	<s:Button id="addMonsterTypeBtn" x="708" y="6" label="添加怪物类型" click="onClick(event)"/>
+	<s:Button id="flyBtn1" x="345" y="6" label="水域点" click="onClick(event)"/>
+	<s:Button id="deleteBuild_npcBtn" x="1250" y="373" label="删除建筑或npc" click="onClick(event)"/>
+	<s:Button id="deleteRoadBtn" x="484" y="6" width="71" label="删除路点" click="onClick(event)"/>
+	<s:Button id="noneBtn" x="556" y="6" label="取消状态" click="onClick(event)"/>
+	<ns1:LayerControl x="733" y="43" id="layerControl" visible="false">
+	</ns1:LayerControl>
+	<s:Button id="addTransferMovieBtn" x="1235" y="78" label="添加传送点" click="onClick(event)"/>
+	<s:Button id="deleteMonsterTypeBtn" x="946" y="6" width="87" label="删除种类怪" click="onClick(event)"/>
+	<s:Button id="monsterZoneBtn" x="1036" y="6" width="60" label="怪区域" click="onClick(event)"/>
+
+</s:WindowedApplication>

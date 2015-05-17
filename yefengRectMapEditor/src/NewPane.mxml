@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Panel xmlns:fx="http://ns.adobe.com/mxml/2009"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 width="400" height="300" title="新建"
+		 creationComplete="init(event)"
+		 >
+	
+	<fx:Script>
+		<![CDATA[
+			import com.YFFramework.air.FileUtil;
+			import com.YFFramework.core.event.EventCenter;
+			import com.YFFramework.core.event.ParamEvent;
+			
+			import manager.DirManager;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			private var file:File=File.desktopDirectory;
+			
+			private var storeFile:File=File.desktopDirectory;
+			
+			public static const SendConfig:String="SendConfig";
+			[Bindable]
+			private var _typeArr:ArrayCollection=new ArrayCollection([]);
+			protected function init(event:FlexEvent):void
+			{
+				_typeArr.addItem({name:"普通==1",type:1});
+				_typeArr.addItem({name:"单人副本==2",type:2});
+				_typeArr.addItem({name:"2人副本==3",type:3});
+				_typeArr.addItem({name:"3人副本==4",type:4});
+				_typeArr.addItem({name:"4人组队副本===5",type:5});
+				typeBox.dataProvider=_typeArr;
+				typeBox.selectedIndex=0;
+				file.addEventListener(Event.SELECT,onEvent);
+				storeFile.addEventListener(Event.SELECT,onEvent);
+			}
+			private function onEvent(e:Event):void
+			{
+				switch(e.currentTarget)
+				{
+					case file:
+						pathTF.text=file.nativePath;
+						break;
+					case storeFile:
+						storeTF.text=storeFile.nativePath;
+						
+						
+						break;
+				}
+				
+			}
+			
+
+			protected function clickHandler(event:MouseEvent):void
+			{
+				switch(event.currentTarget)
+				{
+					case browseBtn:
+						var imagesFilter:FileFilter = new FileFilter("Images", "*.jpg;*.gif;*.png");
+						file.browse([imagesFilter]);
+						break;
+					case cancelBtn:
+						PopUpManager.removePopUp(this);
+						dispose();
+
+						break;
+					case okBtn:
+						sendData();
+						
+						///创建   building 目录和 npc目录 
+						FileUtil.createDirectory(storeFile.url+"/"+DirManager.BuildingDir);
+						FileUtil.createDirectory(storeFile.url+"/"+DirManager.npcDir);
+						///复制文件
+						FileUtil.copyFileToAsync(file,storeFile.url+"/"+nameTF.text+".jpg");
+
+						PopUpManager.removePopUp(this);
+						dispose();
+						break;
+					case storeBtn:
+						storeFile.browseForDirectory("选择存储目录");
+						break;
+				}
+			}
+			
+		private function sendData():void
+		{
+			var type:int=1; //地图类型
+			type=typeBox.selectedIndex;
+			var obj:Object={name:nameTF.text,des:mapdescript.text,tileW:int(tileWTF.text),tileH:int(tileHTF.text),url:String(pathTF.text),storeUrl:storeFile.url,type:type};
+			EventCenter.Instance.dispatchEvent(new ParamEvent(SendConfig,obj));
+		}
+			
+			
+		private function dispose():void
+		{
+			file.removeEventListener(Event.SELECT,onEvent);
+			storeFile.removeEventListener(Event.SELECT,onEvent);
+			removeAllElements();
+			file=null;
+		}
+			
+		]]> 
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations> 
+	<s:Label x="24" y="90" text="tileW"/>
+	<s:Label x="21" y="36" text="地图id"/>
+	<s:Label x="125" y="92" text="tileH"/>
+	<s:Label x="235" y="90" text="类型"/>
+	<s:TextInput id="pathTF" x="30" y="136" width="276"/>
+	<s:Button id="browseBtn" x="314" y="136" width="55" label="浏览" click="clickHandler(event)"/>
+	<s:Button id="cancelBtn" x="277" y="216" width="55" label="取消" click="clickHandler(event)"/>
+	<s:Button id="okBtn" x="113" y="216" width="55" label="确定" click="clickHandler(event)"/>
+	<s:TextInput id="nameTF" x="67" y="32" text="10001" restrict="0-9"/>
+	<s:Label x="203" y="37" text="地图名"/>
+	<s:TextInput id="mapdescript" x="254" y="31" text="新手村" />
+	<s:TextInput id="tileWTF" x="-147" y="-24" width="57" text="30"/>
+	<s:TextInput id="tileHTF" x="166" y="89" width="61" text="30"/>
+	<s:TextInput id="storeTF" x="30" y="184" width="276"/>
+	<s:Button id="storeBtn" x="314" y="184" width="55" label="存储" click="clickHandler(event)"/>
+	<s:ComboBox id="typeBox" x="267" y="87" width="121" labelField="name"/>
+</s:Panel>

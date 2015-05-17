@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<flex:DragPane xmlns:fx="http://ns.adobe.com/mxml/2009"
+				   xmlns:s="library://ns.adobe.com/flex/spark"
+				   xmlns:mx="library://ns.adobe.com/flex/mx"
+				   xmlns:flex="com.YFFramework.air.flex.*"
+				   width="72" height="198" title="层级显示"
+				   >
+	
+	<fx:Script>
+		<![CDATA[
+			import com.YFFramework.core.event.EventCenter;
+			import com.YFFramework.core.event.ParamEvent;
+			
+			public static const MapLayer:String="MapLayer";
+			public static const GridLayer:String="GridLayer";
+			public static const NpcLayer:String="NpcLayer";
+			public static const BuilderLayer:String="BuilderLayer";
+			public static const RoadLayer:String="RoadLayer";
+			public static const MonsterLayer:String="MonsterLayer";
+
+			protected function onClick(event:MouseEvent):void
+			{
+				switch(event.currentTarget)
+				{
+					case mapLayer:
+						EventCenter.Instance.dispatchEvent(new ParamEvent(MapLayer,mapLayer.selected));
+						break;
+					case gridLayer:
+						EventCenter.Instance.dispatchEvent(new ParamEvent(GridLayer,gridLayer.selected));
+						break;
+					case npcLayer:
+						EventCenter.Instance.dispatchEvent(new ParamEvent(NpcLayer,npcLayer.selected));
+
+						break;
+					case builderLayer:
+						EventCenter.Instance.dispatchEvent(new ParamEvent(BuilderLayer,builderLayer.selected));
+						break;
+					case roadLayer:
+						EventCenter.Instance.dispatchEvent(new ParamEvent(RoadLayer,roadLayer.selected));
+						break;
+					case monsterLayer:
+						EventCenter.Instance.dispatchEvent(new ParamEvent(MonsterLayer,monsterLayer.selected));
+						break;
+				}
+			}
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<s:CheckBox id="mapLayer" x="6" y="11" label="地图层" click="onClick(event)" selected="true"/>
+	<s:CheckBox id="gridLayer" x="8" y="88" label="网格层" click="onClick(event)" selected="true"/>
+	<s:CheckBox id="npcLayer" x="8" y="63" label="NPC层" click="onClick(event)" selected="true"/>
+	<s:CheckBox id="builderLayer" x="6" y="37" label="建筑层" click="onClick(event)" selected="true"/>
+	<s:CheckBox id="roadLayer" x="8" y="114" label="路点层" click="onClick(event)" selected="true"/>
+	<s:CheckBox id="monsterLayer" x="8" y="140" label="怪物层" click="onClick(event)" selected="true"/>
+	<s:Label id="xBtn" x="58" y="-28" color="#F41212" fontSize="15" fontWeight="bold" text="X" click="{visible=false}" buttonMode="true"/>
+</flex:DragPane>

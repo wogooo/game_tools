@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<flex:FlexUI xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			 xmlns:s="library://ns.adobe.com/flex/spark" 
+			 xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:flex="com.YFFramework.air.flex.*" width="400" height="300"
+			 creationComplete="init(event)"
+			 
+			 
+			 >
+	<fx:Script>
+		<![CDATA[
+			import mx.events.FlexEvent;
+			
+			private  function init(event:FlexEvent):void
+			{
+				// TODO Auto-generated method stub
+				addEvents();
+			}
+			
+			private function addEvents():void
+			{
+				addEventListener(MouseEvent.MOUSE_DOWN,onMouseEvent);
+				addEventListener(MouseEvent.MOUSE_UP,onMouseEvent);
+			}
+			private function removeEvents():void
+			{
+				removeEventListener(MouseEvent.MOUSE_DOWN,onMouseEvent);
+				removeEventListener(MouseEvent.MOUSE_UP,onMouseEvent);
+			}
+			private function onMouseEvent(e:MouseEvent):void
+			{
+				switch(e.type)
+				{
+					case MouseEvent.MOUSE_DOWN:
+						startDrag();
+						break;
+					case MouseEvent.MOUSE_UP:
+						stopDrag();
+						break;
+					
+				}
+			}
+			override public function dispose(e:FlexEvent=null):void
+			{
+				super.dispose();
+				removeEvents();
+			}
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+</flex:FlexUI>

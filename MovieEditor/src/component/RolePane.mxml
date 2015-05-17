@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+<flex:DragGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:flex="com.YFFramework.air.flex.*" width="414" height="70"
+			   creationComplete="init(event)"
+			   
+			   >
+	<fx:Script>
+		<![CDATA[
+			import com.YFFramework.core.event.EventCenter;
+			
+			import events.ParamEvent;
+			
+			import mx.events.FlexEvent;
+			
+			import type.TypeRoleDeep;
+			import type.TypeRoleShow;
+			
+			protected function init(event:FlexEvent):void
+			{
+				addEvents();
+			}
+			private function addEvents():void
+			{
+				EventCenter.Instance.addEventListener(ParamEvent.RoleCreate,onParamEvent);
+				EventCenter.Instance.addEventListener(ParamEvent.RefRoleCreate,onParamEvent);
+				EventCenter.Instance.addEventListener(ParamEvent.RefRole2Create,onParamEvent);
+			}
+			protected function onParamEvent(e:ParamEvent):void
+			{
+				switch(e.type)
+				{
+					case ParamEvent.RoleCreate:
+						roleButton.alpha=1;
+						break;
+					case ParamEvent.RefRoleCreate:
+						refRoleButton.alpha=1;
+						break;
+					case ParamEvent.RefRole2Create:
+						refRoleButton2.alpha=1;
+						break;
+					
+				}
+				
+			}
+			
+			protected function onClick(e:MouseEvent):void
+			{
+				
+				switch(e.currentTarget)
+				{
+					case mainPt:
+						dispatchEvent( new ParamEvent(ParamEvent.ShowRoleInfo,{select:mainPt.selected,type:TypeRoleShow.Pt}	));
+						break;
+					case mainFrame:
+						dispatchEvent( new ParamEvent(ParamEvent.ShowRoleInfo,{select:mainFrame.selected,type:TypeRoleShow.Frame}));
+						break;
+					case mainVisible:
+						dispatchEvent( new ParamEvent(ParamEvent.ShowRoleInfo,{select:mainVisible.selected,type:TypeRoleShow.Visible}	));
+						break;
+
+					case refPt:
+						dispatchEvent( new ParamEvent(ParamEvent.ShowRefRoleInfo,{select:refPt.selected,type:TypeRoleShow.Pt}));
+						break;
+					case refFrame:
+						dispatchEvent( new ParamEvent(ParamEvent.ShowRefRoleInfo,{select:refFrame.selected,type:TypeRoleShow.Frame}	));
+						break;
+					case refVisible:
+						dispatchEvent( new ParamEvent(ParamEvent.ShowRefRoleInfo,{select:refVisible.selected,type:TypeRoleShow.Visible}	));
+						break;
+					case refPt2:
+						dispatchEvent( new ParamEvent(ParamEvent.ShowRefRoleInfo2,{select:refPt2.selected,type:TypeRoleShow.Pt}));
+						break;
+					case refFrame2:
+						dispatchEvent( new ParamEvent(ParamEvent.ShowRefRoleInfo2,{select:refFrame2.selected,type:TypeRoleShow.Frame}	));
+						break;
+					case ref2Visible:
+						dispatchEvent( new ParamEvent(ParamEvent.ShowRefRoleInfo2,{select:ref2Visible.selected,type:TypeRoleShow.Visible}	));
+						break;
+					
+				}
+			}
+			
+			public function getRefRole2ButtonRect():Rectangle
+			{
+				return new Rectangle(refRoleButton2.x,refRoleButton2.y-30,refRoleButton2.width,refRoleButton2.height+30);
+			}
+			public function getRefRoleButtonRect():Rectangle
+			{
+				return new Rectangle(refRoleButton.x,refRoleButton.y-30,refRoleButton.width,refRoleButton.height+30);
+			}
+
+			
+			protected function onButtonClick(event:MouseEvent):void
+			{
+				// TODO Auto-generated method stub
+				switch(event.currentTarget)
+				{
+					case roleButton:
+						dispatchEvent(new ParamEvent(ParamEvent.ChangeRoleDeep,TypeRoleDeep.RolePlayer));
+						break;
+					case refRoleButton:
+						dispatchEvent(new ParamEvent(ParamEvent.ChangeRoleDeep,TypeRoleDeep.RefRole));
+						break;
+					case refRoleButton2:
+						dispatchEvent(new ParamEvent(ParamEvent.ChangeRoleDeep,TypeRoleDeep.RefRole2));
+						break;
+					
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	
+	
+	<s:Button id="roleButton" x="14" y="7" width="100" height="30" label="主" alpha="0.5"
+			  chromeColor="#28E209" click="onButtonClick(event)" color="#F30A0A" fontSize="15"
+			  mouseChildren="false"/>
+	<s:Button id="refRoleButton" x="145" y="7" width="98" height="30" label="副一" alpha="0.5"
+			  chromeColor="#28E209" click="onButtonClick(event)" color="#F30A0A" fontSize="15"
+			  mouseChildren="false"/>
+	<s:CheckBox id="mainPt" x="2" y="42" label="原点" click="onClick(event)" color="#F81E07"/>
+	<s:CheckBox id="mainFrame" x="44" y="42" label="边框" click="onClick(event)" color="#F81E07"/>
+	<s:CheckBox id="mainVisible" x="87" y="42" label="显示" click="onClick(event)" color="#F81E07"
+				enabled="true" selected="true"/>
+	<s:CheckBox id="refVisible" x="222" y="42" label="显示" click="onClick(event)" color="#F81E07"
+				enabled="true" selected="true"/>
+	<s:CheckBox id="ref2Visible" x="359" y="42" label="显示" click="onClick(event)" color="#F81E07"
+				enabled="true" selected="true"/>
+	<s:CheckBox id="refFrame" x="179" y="42" label="边框" click="onClick(event)" color="#F81E07"/>
+	<s:Button id="refRoleButton2" x="284" y="6" width="100" height="30" label="副二" alpha="0.5"
+			  chromeColor="#28E209" click="onButtonClick(event)" color="#F30A0A" fontSize="15"
+			  mouseChildren="false"/>
+	<s:CheckBox id="refFrame2" x="315" y="42" label="边框" click="onClick(event)" color="#F81E07"/>
+	<s:CheckBox id="refPt2" x="272" y="42" label="原点" click="onClick(event)" color="#F81E07"/>
+	<s:CheckBox id="refPt" x="137" y="42" label="原点" click="onClick(event)" color="#F81E07"/>
+</flex:DragGroup>

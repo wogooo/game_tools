@@ -1,0 +1,426 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   width="1000" height="600" applicationComplete="init(event)" xmlns:flex="com.YFFramework.air.flex.*"
+					   
+					   >
+	<fx:Script>
+		<![CDATA[
+			import com.YFFramework.air.FileUtil;
+			import com.YFFramework.core.center.manager.update.UpdateManager;
+			import com.YFFramework.core.event.YFEvent;
+			import com.YFFramework.core.event.YFEventCenter;
+			import com.YFFramework.core.net.loader.file.FileLoader;
+			import com.YFFramework.core.net.loader.image_swf.BytesLoader;
+			import com.YFFramework.core.proxy.StageProxy;
+			import com.YFFramework.core.ui.yf2d.data.YF2dActionData;
+			import com.YFFramework.core.utils.image.BitmapDataUtil;
+			import com.YFFramework.core.utils.image.advanced.encoder.PNGEncoder;
+			
+			import component.ActionContainer;
+			import component.PositionUtil;
+			import component.manager.GpuFileGenerator;
+			
+			import manager.ActionData;
+			import manager.FileActionDataUtil;
+			import manager.FileGenerator;
+			import manager.HswfAnalysse;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.ColorPickerEvent;
+			import mx.events.FlexEvent;
+			import mx.events.ListEvent;
+			
+			import net.BytesObjectLoad;
+			
+			import spark.events.IndexChangeEvent;
+			
+			import type.TypeFile;
+			
+			import utils.ActionUtil;
+			
+			
+			[Bindable]
+			private static var collection:ArrayCollection=new ArrayCollection([32,64,128,256,512,1024,2048]);
+			private var file:File;
+			private var actionData:ActionData;
+			
+			/**保存容器  一个容器一个dict
+			 */ 
+			private var _dict:Dictionary;
+			
+			//全部一张
+			private static const BeginMain:String="BeginMain";
+				
+			private var _selectContainer:ActionContainer;
+			
+			private var grid:Grid;
+			protected function init(event:FlexEvent):void
+			{
+				YFEventCenter.Instance.dispatchEventWith("stageInit");
+				StageProxy.Instance.configure(stage);
+				// TODO Auto-generated method stub
+				addEventListener(NativeDragEvent.NATIVE_DRAG_DROP,onDragDrop);
+				addEventListener(NativeDragEvent.NATIVE_DRAG_ENTER,onDragDrop);
+				addEventListener(BeginMain,onMain);
+				///actionData文件解析完成触发
+				YFEventCenter.Instance.addEventListener(FileActionDataUtil.ActionDataComplete,onActionDataComplete);
+				grid=new Grid();
+				fuzhu.addElement(grid);
+				addEventListener(Event.ENTER_FRAME,onFrame);
+			}
+			private function onFrame(e:Event):void
+			{
+				UpdateManager.Instance.update();
+				if(xMouse&&yMouse)
+				{
+					if(_selectContainer)
+					{
+						xMouse.text=_selectContainer.mouseX.toString();
+						yMouse.text=_selectContainer.mouseY.toString();
+						var color:Boolean=BitmapDataUtil.getInsect(_selectContainer.container,_selectContainer.mouseX,_selectContainer.mouseY);
+						alphaTxt.text=color.toString();
+					}
+				}
+			}
+			private function onDragDrop(e:NativeDragEvent):void
+			{
+				//将拖入的文件以数组形式获得，指定拖入的数据是文件数组形式
+				var files:Array = e.clipboard.getData(ClipboardFormats.FILE_LIST_FORMAT) as Array;
+				//获得拖入的第一个文件
+				var file:File = File(files[0]);
+				switch(e.type)
+				{				
+					case NativeDragEvent.NATIVE_DRAG_ENTER:  
+						if(file.type==TypeFile.ActionDataExtension||file.isDirectory )
+							NativeDragManager.acceptDragDrop(this);
+						break;
+					case NativeDragEvent.NATIVE_DRAG_DROP:
+						this.file=file; 
+						
+						if(file.type==TypeFile.ActionDataExtension)
+						{
+							readHead(file,false);
+						}
+						else if(file.isDirectory)
+						{
+							
+						}
+						
+						break;
+				}
+			} 
+			
+//			private function initLoad(file:File):void
+//			{
+//				var fileLoader:FileLoader=new FileLoader(URLLoaderDataFormat.BINARY);
+//				fileLoader.loadCompleteCallBack=fileLoadComplete
+//				fileLoader.load(file.url)
+//			}
+			/**读取  头 文件
+			 */
+			private function readHead(file:File,alet:Boolean):void
+			{
+				var bytes:ByteArray=new ByteArray();
+				var stream:FileStream=new FileStream();
+				stream.open(file,FileMode.READ);
+				stream.readBytes(bytes,0,stream.bytesAvailable);
+				stream.close();
+				bytes.position=0;
+				FileActionDataUtil.analysseActionData(bytes,0);
+			}
+			
+//			private function fileLoadComplete(loader:FileLoader):void
+//			{
+//				var data:ByteArray=loader.data as ByteArray;
+//				var obj:Object;
+//				var swfBytesLoader:BytesLoader
+//				if(file.type==TypeFile.FileExtention)
+//				{   //当为 .tdxw
+//					///解析
+//					var dataObject:Object=FileGenerator.Instance.analyze(data);
+//					var bytesLoad:BytesObjectLoad=new BytesObjectLoad();
+//					bytesLoad.load(dataObject)
+//					bytesLoad.loadCompleteCalback=bytesLoadComplete;
+//				}
+//				else if(file.type==TypeFile.HswfExtension)
+//				{
+//					obj=HswfAnalysse.analysse(data);
+//					tempActionData=new ActionData();
+//					tempActionData.headerData=obj.headData;
+//					swfBytesLoader=new BytesLoader();
+//					swfBytesLoader.load(obj.swfBytes,new ApplicationDomain());
+//					swfBytesLoader.loadCompleteCalback=swfLoad;
+//				}
+//				else if(file.type==TypeFile.ActionDataExtension)  /// actionData
+//				{
+//					FileActionDataUtil.analysseActionData(data,0);
+//				}
+//			}
+			
+			private function onActionDataComplete(e:YFEvent):void
+			{
+				var data:Object=e.param 
+				actionData=data.actionData;
+				dispatchEvent(new Event(BeginMain));
+			}
+
+			
+			private var tempActionData:ActionData;
+			private function bytesLoadComplete(loader:BytesObjectLoad):void
+			{
+				actionData=loader.actionData;
+				dispatchEvent(new Event(BeginMain));
+			}
+			private function swfLoad(loader:BytesLoader,domain:ApplicationDomain):void
+			{
+				HswfAnalysse.extractActionData(tempActionData,domain);
+				actionData=tempActionData;
+				dispatchEvent(new Event(BeginMain));
+			}
+			private function onMain(e:Event=null):void
+			{
+				//重置 	
+				rootContainer.removeAllElements();
+				_dict=new Dictionary();
+				_selectContainer=null;
+				wCombo.selectedItem="1024"
+				hCombo.selectedItem="1024"
+				initTree();
+				createContainer();
+				
+//				createFile();
+			}
+			
+			
+			private function createContainer():void
+			{
+				var actionContainer:ActionContainer;
+				var actDict:Dictionary;
+				for each(var action:int in actionData.getActionArr())
+				{
+					actDict=new Dictionary();
+					_dict[action]=actDict;
+					for each(var direction:int in actionData.getDirectionArr(action) )
+					{
+						actionContainer=new ActionContainer();
+//						PositionUtil.positionActionData(actionData,action,direction,actionContainer,int(wCombo.selectedItem),int(hCombo.selectedItem),colorPicker.selectedColor);
+						PositionUtil.positionActionDataAuto(actionData,action,direction,actionContainer,colorPicker.selectedColor);
+						rootContainer.addElement(actionContainer);
+						actDict[direction]=actionContainer;
+					}
+				}
+				
+				var mAct:int=actionData.getActionArr()[0];
+				var mDir:int=actionData.getDirectionArr(mAct)[0];
+				_selectContainer=_dict[mAct][mDir];
+				_selectContainer.action=mAct;
+				_selectContainer.direction=mDir;
+				containerSelect(_selectContainer);
+			}
+			/**重新放置图像 
+			 */ 
+			private function rePositionImage(action:int,direction:int,width:int,height:int):void
+			{
+				var actionContainer:ActionContainer=_dict[action][direction];
+				PositionUtil.positionActionData(actionData,action,direction,actionContainer,width,height,colorPicker.selectedColor);
+			}
+			
+			/**某容器被选中 
+			 */ 
+			private function containerSelect(container:ActionContainer):void
+			{
+				showContainer(container);
+				wCombo.selectedItem=container.width;
+				hCombo.selectedItem=container.height;
+				numText.text=container.contentNumElements.toString();
+				colorPicker.selectedColor=container.mColor;
+
+			}
+			
+			public function getButtonRect(button:Button):Rectangle
+			{
+				return new Rectangle(button.x,button.y,button.width,button.height);
+			}
+			private function showContainer(container:Group):void
+			{
+				var len:int=rootContainer.numElements;
+				var child:Group;
+				for(var i:int=0;i!=len;++i)
+				{
+					child=rootContainer.getElementAt(i) as Group;
+					if(child!=container)child.visible=false;
+				}
+				container.visible=true;
+			}
+			
+			protected function drawBg(event:ColorPickerEvent=null):void
+			{
+		//		if(_selectContainer)	_selectContainer.drawBg2(colorPicker.selectedColor);
+				
+				var container:ActionContainer;
+				//给所有的换背景
+				for each(var actDict:Dictionary in _dict)
+				{
+					for each(container in actDict )
+					{
+						container.drawBg2(colorPicker.selectedColor);
+					}
+				}
+				
+				
+			}
+			
+			
+			protected function change(event:IndexChangeEvent):void
+			{
+				// TODO Auto-generated method stub
+				if(_selectContainer)
+					rePositionImage(_selectContainer.action,_selectContainer.direction,int(wCombo.selectedItem),int(hCombo.selectedItem));
+			}
+			
+			protected function createFile(event:MouseEvent=null):void
+			{
+				// TODO Auto-generated method stub
+				var bitmapDataArr:Array=[]; 
+				var yfData:YF2dActionData=GpuFileGenerator.createYF2dData(actionData.headerData,_dict,bitmapDataArr);
+				var index:int=file.name.indexOf(".");
+				var fileName:String=file.name.substring(0,index);
+				fileName +="_s";
+//				switch(event.currentTarget)
+//				{
+//					case yf2dBtn:
+						var header:ByteArray=GpuFileGenerator.createyf2DHead(yfData);
+						FileUtil.createFileByByteArray(file.parent,fileName+TypeFile.yf2dHeadExtension,header);
+						//// 分解  
+						var len:int=bitmapDataArr.length;
+						var coder:PNGEncoder=new PNGEncoder();
+						var name:String;
+						for(var i:int=0;i!=len;++i)
+						{
+							name=bitmapDataArr[i].name;
+							var pngBytes:ByteArray=coder.encode(bitmapDataArr[i].data);
+							FileUtil.createFileByByteArray(file.parent,fileName+"/"+name+".png",pngBytes);
+						}
+						
+//						Alert.show("yf2d头文件文件创建完成");
+//						break;
+//					
+//				}
+			}
+			
+			
+			
+			private function initTree():void
+			{
+				var actObj:Object;
+				var directObj:Object;
+				var xml:XML=<actions label="全部" value="-10"  />;/// -10值表示全部
+				var actionNode:XML;
+				var actionLabel:String;
+				var directionNode:XML;
+				var directionLabel:String;
+				for each  (var act:int in actionData.headerData["action"])
+				{
+					actionNode=<action />
+					actionLabel=ActionUtil.GetActionName(act);
+					actionNode.@label=actionLabel;
+					actionNode.@value=act;
+					for each(var direct:int in actionData.headerData[act]["direction"])
+					{
+						directionNode=<direction />;
+						directionLabel=ActionUtil.getDirectionName(direct);
+						directionNode.@label=directionLabel;
+						directionNode.@value=direct;
+						directionNode.@parentValue=act;
+						actionNode.appendChild(directionNode);
+					}
+					xml.appendChild(actionNode);
+				}
+				var root:XML=<root />
+				root.appendChild(xml);
+				xml=root;	
+				mTree.dataProvider=xml;
+				//		trace(xml);
+			}
+			
+			protected function itemClick(e:ListEvent):void
+			{
+				var obj:Object=mTree.selectedItem;
+				if(obj==null) return ;
+				var act:int
+				var direct:int;				
+				var actionName:String;
+				if(obj.hasOwnProperty("@parentValue"))  //当为方向时
+				{
+					act=int(obj.@parentValue);
+					direct=int(obj.@value);
+					var container:ActionContainer=_dict[act][direct];
+					containerSelect(container);
+					_selectContainer=container;
+					_selectContainer.action=act;
+					_selectContainer.direction=direct;
+					
+					desTxt.text=ActionUtil.GetActionName(act)+"--"+ActionUtil.getDirectionName(direct);
+				}
+				
+			}
+			
+			protected function onClick(event:MouseEvent):void
+			{
+				if(_selectContainer)
+				{
+					var action:int=_selectContainer.action;
+					///批量处理
+					var container:ActionContainer;
+					var w:int=int(wCombo.selectedItem);
+					var h:int=int(hCombo.selectedItem);
+					for each(var dir:int in actionData.getDirectionArr(action))
+					{
+						container=_dict[action][dir];
+						rePositionImage(action,dir,w,h)
+					}
+					Alert.show(ActionUtil.GetActionName(action)+"动作批量处理完成");
+				}
+				
+			}
+			
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<s:Scroller x="0" y="10" width="890" height="100%">
+		<s:Group width="100%" height="100%" >
+			<s:Group id="rootContainer" width="100%" height="100%" />
+			<s:Group id="fuzhu" width="100%" height="100%" >
+			</s:Group>
+		</s:Group>
+	</s:Scroller>
+	<s:ComboBox  x="914" y="217" width="60" id="wCombo"  dataProvider="{collection}" selectedItem="1024" change="change(event)"/>
+	<s:ComboBox  x="915" y="274" width="60" id="hCombo"  dataProvider="{collection}" selectedItem="1024" change="change(event)" />
+	<s:TextInput id="numText" x="930" y="132" width="60" text="0" editable="false"   />
+	<s:TextInput id="desTxt" x="934" y="165" width="60" text="0" editable="false"   />
+	<s:Label x="898" y="279" text="H"/>
+	<s:Label x="898" y="222" text="W"/>
+	<mx:ColorPicker x="915" y="360" change="drawBg(event)" id="colorPicker" selectedColor="#0006FF"/>
+	<s:Button id="yf2dBtn" x="898" y="409" label="生成yf2d头" click="createFile(event)"/>
+	<s:Label x="898" y="137" text="个数"/>
+	<s:Button id="ratioBtn" x="898" y="317" label="该动作都执行" click="onClick(event)"/>
+	
+	<s:CheckBox x="898" y="10" label="显示辅助" selected="true" id="checkBox" click="{grid.visible=checkBox.selected}"/>
+	
+	<flex:DragPane width="150" height="600" x="660" y="141" title="动作" id="treeContainer" backgroundAlpha="0" >
+		<mx:Tree id="mTree"  width="100%" height="100%" labelField="@label" showRoot="false" itemClick="itemClick(event)" />	
+	</flex:DragPane>
+	<s:Label x="898" y="36" text="X"/>
+	<s:Label x="898" y="66" width="22" text="y" />
+	<s:TextInput id="xMouse" x="912" y="32" width="44" editable="false"/>
+	<s:TextInput id="yMouse" x="911" y="60" width="44" editable="false"/>
+	<s:Label x="898" y="91" text="不透明"/>
+	<s:TextInput x="938" y="89" width="36" editable="false" id="alphaTxt"/>
+
+</s:WindowedApplication>

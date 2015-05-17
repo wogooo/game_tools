@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<flex:DragPane xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:flex="com.YFFramework.air.flex.*" width="358" height="158"
+			   title="请选择导出品质"
+			   >
+	
+	<fx:Script>
+		<![CDATA[
+			import com.YFFramework.core.event.EventCenter;
+			
+			import events.ParamEvent;
+			
+			import mx.managers.PopUpManager;
+			protected function onButtonClick(event:MouseEvent):void
+			{
+				switch(event.currentTarget)
+				{
+					case okBtn:
+						var rbg:int=int(rbgHeader.text);
+						var ra:int=int(raHeader.text);
+						EventCenter.Instance.dispatchEvent(new ParamEvent(ParamEvent.ExportFile,{rbg:rbg,ra:ra}));
+						PopUpManager.removePopUp(this);
+						dispose();
+						break;
+					case cancelBtn:
+						PopUpManager.removePopUp(this);
+						dispose();
+						break;
+					
+				}
+			}
+			
+			override public function dispose():void
+			{
+				// TODO Auto Generated method stub
+				super.dispose();
+				removeAllElements();
+			}
+			
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<s:Label x="40" y="36" color="#F00808" text="rbg"/>
+	<s:Label x="198" y="36" color="#EA0A0A" text="ra"/>
+	<s:TextInput id="rbgHeader" x="74" y="33" width="68" text="80"/>
+	<s:TextInput id="raHeader" x="235" y="32" width="72" text="20"/>
+	<s:Button id="okBtn" x="92" y="80" label="确定" click="onButtonClick(event)"/>
+	<s:Button id="cancelBtn" x="203" y="80" label="取消" click="onButtonClick(event)" />
+</flex:DragPane>

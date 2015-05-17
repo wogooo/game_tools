@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:BorderContainer xmlns:fx="http://ns.adobe.com/mxml/2009"
+				   xmlns:s="library://ns.adobe.com/flex/spark"
+				   xmlns:mx="library://ns.adobe.com/flex/mx"
+				   xmlns:ns1="*"
+				   width="734" height="666" creationComplete="init(event)"
+				   
+				   >
+	<fx:Script>
+		<![CDATA[
+			import mx.events.FlexEvent;
+			
+			protected function init(event:FlexEvent):void
+			{
+				step1.currentStepTxt.text="1";
+				step1.stateTypeTxt.text="1";
+				step1.stepTypeTxt.text="1";
+				
+				step2.currentStepTxt.text="2";
+				step2.stateTypeTxt.text="2";
+				step2.stepTypeTxt.text="1";
+				step3.currentStepTxt.text="3";
+				step3.stateTypeTxt.text="3";
+				step3.stepTypeTxt.text="1";
+			}
+			
+			/**获取配置
+			 */ 
+			public function getData():Object
+			{
+				var obj:Object={};
+				obj.taskId=int(taskIdTxt.text);
+				obj.taskName=taskNameTxt.text;
+				obj.type=int(taskTypeTxt.text);
+				obj.preTaskId=int(preTaskTxt.text);
+				obj.minLevel=int(minLevelTxt.text);
+				obj.maxLevel=int(maxlevelTxt.text);
+				obj.exp=int(expTxt.text);
+				obj.gold=int(goldTxt.text);
+				obj.totalStep=int(taskStepTxt.text);
+				///物品列表
+				obj.goodsIdArr=goodsTxt.text.split(",");
+				//// step  
+				obj[1]=step1.getData();
+				var is2:int=int(step2.stepTypeTxt.text);
+				var is3:int=int(step3.stepTypeTxt.text)
+				if(is2!=0)obj[2]=step2.getData();
+				if(is3!=0)	obj[3]=step3.getData();
+				return obj;
+			}
+			
+			/**创建
+			 */ 
+			public function fillData(obj:Object):void
+			{
+				taskIdTxt.text=obj.taskId.toString();
+				taskNameTxt.text=obj.taskName;
+				taskTypeTxt.text=obj.type.toString();
+				preTaskTxt.text=obj.preTaskId.toString();
+				minLevelTxt.text=obj.minLevel.toString();
+				maxlevelTxt.text=obj.maxLevel.toString();
+				expTxt.text=obj.exp.toString();
+				goldTxt.text=obj.gold.toString();
+				goodsTxt.text=arrayToString(obj.goodsIdArr);
+				if(obj.totalStep)	taskStepTxt.text=obj.totalStep.toString();
+				// step
+				var obj1:Object=obj[1];
+				var obj2:Object=obj[2];
+				var obj3:Object=obj[3];
+				step1.fillData(obj1);
+				if(obj2)step2.fillData(obj2);
+				if(obj3)step3.fillData(obj3);
+			}
+			
+			
+			
+		
+			private function arrayToString(arr:Array):String
+			{
+				var len:int=arr.length;
+				var str:String="";
+				for(var i:int=0;i!=len;i++)
+				{
+					str +=arr[i];
+					if(i<len-1)str=str+",";
+				}
+				return str;
+			}
+			
+			
+			
+			public function getTaskId():int
+			{
+				return int(taskIdTxt.text);
+			}
+			/**获取任务名称
+			 */ 
+			public function getTaskName():String
+			{
+				return taskNameTxt.text;
+			}
+			
+			
+			public function clear():void
+			{
+				taskIdTxt.text="";
+				taskNameTxt.text="";
+				preTaskTxt.text="";
+				minLevelTxt.text="";
+				maxlevelTxt.text="";
+				goodsTxt.text="0";
+				step1.clear();
+				step2.clear();
+				step3.clear();
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<s:Label x="5" y="55" text="任务名"/>
+	<s:Label x="125" y="24" text="任务类型" toolTip="类型 任务类型  主线还是支线  1  主线 2 支线  3 循环"/>
+	<s:Label x="5" y="85" text="前置任务id"/>
+	<s:Label x="4" y="114" text="最小等级"/>
+	<s:Label x="119" y="116" text="最大等级"/>
+	<s:Label x="4" y="139" text="奖励励验"/>
+	<s:Label x="117" y="142" text="奖励金币"/>
+	<s:Label x="3" y="169" text="奖励物品列表"/>
+	<s:Label x="4" y="25" text="任务ID"/>
+	<s:TextInput id="taskIdTxt" x="42" y="21" width="71" restrict="0-9"/>
+	<s:TextInput id="taskNameTxt" x="42" y="51" width="206"/>
+	<s:TextInput id="taskTypeTxt" x="177" y="21" width="71" restrict="0-9" text="1"
+				 toolTip="类型 任务类型  主线还是支线  1  主线 2 支线  3 循环"/>
+	<s:TextInput id="preTaskTxt" x="70" y="82" width="71" restrict="0-9"/>
+	<s:Label x="149" y="86" text="任务总步数"/>
+	<s:TextInput id="taskStepTxt" x="214" y="83" width="29" restrict="0-9" text="3" toolTip="任务总步数任务完成需要的步数"/>
+	<s:TextInput id="minLevelTxt" x="55" y="110" width="60" restrict="0-9"/>
+	<s:TextInput id="maxlevelTxt" x="171" y="112" width="60" restrict="0-9"/>
+	<s:TextInput id="expTxt" x="54" y="137" width="60" restrict="0-9"/>
+	<s:TextInput id="goldTxt" x="174" y="140" width="60" restrict="0-9"/>
+	<s:TextInput id="goodsTxt" x="79" y="165" width="60" text="0"
+				 toolTip="奖励列表:比如 :  100  多个物品奖励为  100,200   用','隔离开"/>
+	<s:Scroller x="256" y="10" width="473" height="650">
+		<s:Group width="100%" height="100%">
+			<ns1:TaskStep id="step1" x="24" y="5">
+			</ns1:TaskStep>
+			<ns1:TaskStep id="step2" x="24" y="237">
+			</ns1:TaskStep>
+			<s:Label x="5" y="10" color="#EF0D0D" text="一"/>
+			<s:Label x="4" y="479" color="#EC0D0D" text="三"/>
+			<s:Label x="4" y="244" color="#F30202" text="二"/>
+			<ns1:TaskStep id="step3" x="24" y="471">
+			</ns1:TaskStep>
+		</s:Group>
+	</s:Scroller>
+</s:BorderContainer>

@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009"
+					   xmlns:s="library://ns.adobe.com/flex/spark"
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   width="322" height="177" applicationComplete="init(event)">
+	<fx:Script>
+		<![CDATA[
+			import com.YFFramework.air.FileUtil;
+			import com.YFFramework.core.net.loader.image_swf.UILoader;
+			import com.YFFramework.core.utils.image.advanced.encoder.JPGEncoder;
+			import com.YFFramework.core.utils.image.advanced.encoder.PNGEncoder;
+			
+			import mx.events.FlexEvent;
+			import mx.graphics.codec.JPEGEncoder;
+			
+			import spark.components.Image;
+			
+			private var dir:File;
+//			private var image:Image
+			protected function init(event:FlexEvent):void
+			{
+				// TODO Auto-generated method stub
+//				image=new Image();
+//				addElement(image);
+				addEventListener(NativeDragEvent.NATIVE_DRAG_DROP,onDragDrop);
+				addEventListener(NativeDragEvent.NATIVE_DRAG_ENTER,onDragDrop);
+			}
+			private function onDragDrop(e:NativeDragEvent):void
+			{
+				//将拖入的文件以数组形式获得，指定拖入的数据是文件数组形式
+				var files:Array = e.clipboard.getData(ClipboardFormats.FILE_LIST_FORMAT) as Array;
+				//获得拖入的第一个文件
+				var file:File = File(files[0]);
+				switch(e.type)
+				{				
+					case NativeDragEvent.NATIVE_DRAG_ENTER:  
+						if(file.type==".jpg"||file.type==".png" )
+							NativeDragManager.acceptDragDrop(this);
+						break;
+					case NativeDragEvent.NATIVE_DRAG_DROP:
+						var index:int=file.url.lastIndexOf(".");
+						var url:String=file.url.substring(0,index);
+						dir=FileUtil.createDirectory(url);
+						var uiLoader:UILoader=new UILoader();
+						uiLoader.initData(file.url);
+						uiLoader.loadCompleteCallback=callback
+						break;
+				}
+			}  
+			private function callback(content:DisplayObject,data:Object=null):void
+			{
+				var bm:BitmapData;
+				var mat:Matrix;
+				var bytes:ByteArray
+				if(jpgBox.selected)
+				{
+					FileUtil.createSliceImage(this,dir,content,300,300,"jpg",80);
+				}
+				else  /// png  for   
+				{
+					
+					FileUtil.createSliceImage(this,dir,content,256,256,"png",0,true);
+//					bm=new BitmapData(512,512);  ///缩略图 512大小
+//					mat=new Matrix();
+//					mat.scale(512/content.width,512/content.height);
+//					bm.draw(content,mat);
+//					var pngCoder :PNGEncoder=new PNGEncoder();
+//					bytes=pngCoder.encode(bm);
+//					FileUtil.createFileByByteArray(dir.parent,dir.name+"m.png",bytes);
+				}
+				bm=new BitmapData(content.width*0.1,content.height*0.1);
+				mat=new Matrix();
+				mat.scale(0.1,0.1);
+				bm.draw(content,mat);
+				var code :JPGEncoder=new JPGEncoder(30);
+				bytes=code.encode(bm);
+				FileUtil.createFileByByteArray(dir.parent,dir.name+"s.jpg",bytes);
+				
+				//创建 atf文件
+				
+				var atfPng:BitmapData=new BitmapData(getTwoPower(content.width*0.1),getTwoPower(content.height*0.1),false,0x000000);
+				atfPng.draw(bm,new Matrix());
+				
+				var pngEncoder:PNGEncoder=new PNGEncoder();
+				var atfPngBytes:ByteArray=pngEncoder.encode(atfPng);
+				FileUtil.createFileByByteArray(dir.parent,dir.name+"m.png",atfPngBytes);
+
+
+			}
+			
+			
+			
+			
+			/** 2 ci fang */
+			public function getTwoPower(number:int):int
+			{
+				if (number > 0 && (number & (number - 1)) == 0) // see: http://goo.gl/D9kPj
+					return number;
+				else
+				{
+					var result:int = 1;
+					while (result < number) result <<= 1;
+					return result;
+				}
+			}
+
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<s:CheckBox id="jpgBox" x="23" y="65" label="jpg" selected="false" />
+	<s:Label x="10" y="10" text="生成地图切片"/>
+</s:WindowedApplication>

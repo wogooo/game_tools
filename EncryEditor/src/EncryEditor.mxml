@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009"
+					   xmlns:s="library://ns.adobe.com/flex/spark"
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   width="287" height="130" creationComplete="init(event)">
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.hurlant.crypto.symmetric.AESKey;
+			
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			
+			
+			///加密 key
+			private static const EntryKey:String="YFFrameWorkEntry";
+			
+			private var _storeFile:File=File.desktopDirectory;
+			private var _fileName:String;
+			///文件名
+			private var _rawFileName:String;
+			
+			private var _data:ByteArray;
+			private var _operateFunc:Function;
+			protected function init(event:FlexEvent):void
+			{
+				///托物体进来 
+				addEventListener(NativeDragEvent.NATIVE_DRAG_DROP,onDragDrop);
+				addEventListener(NativeDragEvent.NATIVE_DRAG_ENTER,onDragDrop);
+			}
+			private function onDragDrop(e:NativeDragEvent):void
+			{
+				//将拖入的文件以数组形式获得，指定拖入的数据是文件数组形式
+				var files:Array = e.clipboard.getData(ClipboardFormats.FILE_LIST_FORMAT) as Array;
+				//获得拖入的第一个文件
+				var file:File = File(files[0]);
+				switch(e.type)
+				{				
+					case NativeDragEvent.NATIVE_DRAG_ENTER:  
+						if(file.type==".swf")
+							NativeDragManager.acceptDragDrop(this);
+						break;
+					case NativeDragEvent.NATIVE_DRAG_DROP:
+						_storeFile=file.parent;
+						_fileName=UtilString.getExactName(file.url);
+						_rawFileName=_fileName;
+						openFile(file.url);
+						break;
+				}
+			}  
+			
+			
+			private function openFile(url:String):void
+			{
+					var loader:FileLoader=new FileLoader(URLLoaderDataFormat.BINARY);
+					loader.loadCompleteCallBack=callBack;
+					loader.load(url);
+			}
+			
+			private function callBack(loader:FileLoader):void
+			{
+				_data=loader.data as ByteArray;
+				var swf:ByteArray;
+				switch (_data.readMultiByte(3,"us-ascii"))
+				{
+					case "CWS" :
+						txt.text="文件为已压缩文件，可进行解压";
+						_operateFunc=decompress;
+						_fileName +="_un.swf";///未压缩文件
+					//	swf=decompress(_data);
+						break;
+					case "FWS" :
+						txt.text="文件为未压缩文件，可进行压缩";
+					//	swf=compress(_data);
+						_operateFunc=compress;
+						_fileName +="_com.swf";//已经压缩 了的文件
+						break;
+					default :
+						throw Error("Not SWF...");
+						break;
+				}
+			}
+			
+			
+			/**压缩 
+			 */ 
+			private function compress(data:ByteArray):ByteArray 
+			{
+				var header:ByteArray=new ByteArray ;
+				var decompressed:ByteArray=new ByteArray ;
+				var compressed:ByteArray=new ByteArray ;
+				header.writeBytes(data,3,5);//read the header, excluding the signature
+				decompressed.writeBytes(data,8);
+				//read the rest
+				decompressed.compress();
+				compressed.writeMultiByte("CWS","us-ascii");
+				//mark as compressed
+				compressed.writeBytes(header);
+				compressed.writeBytes(decompressed);
+				return compressed;
+			}
+			/**解压 
+			 */ 
+			private function decompress(data:ByteArray):ByteArray
+			{
+				var header:ByteArray=new ByteArray ;
+				var compressed:ByteArray=new ByteArray ;
+				var decompressed:ByteArray=new ByteArray ;
+				header.writeBytes(data,3,5);//read the uncompressed header, excluding the signature
+				compressed.writeBytes(data,8);//read the rest, compressed
+				compressed.uncompress();
+				decompressed.writeMultiByte("FWS","us-ascii");//mark as uncompressed
+				decompressed.writeBytes(header);//write the header back
+				decompressed.writeBytes(compressed);//write the now uncompressed content
+				return decompressed;
+			}
+			
+			
+
+			
+			protected function onClick(event:MouseEvent):void
+			{
+				switch(event.currentTarget)
+				{
+					case compressBtn:
+						txt.text="";
+						var swfBytes:ByteArray=_operateFunc(_data);
+						FileUtil.createFileByByteArray(_storeFile,_fileName,swfBytes);
+						Alert.show("压缩处理完成!");
+						break;
+					case enryBtn:
+						_data.position=0;
+						_data=doEntry(_data);
+						_rawFileName +="_en.swf";
+						FileUtil.createFileByByteArray(_storeFile,_rawFileName,_data);
+						Alert.show("加密处理完成!");
+
+						break;
+					case decodeBtn:
+						_data.position=0;
+						_data=decodeEntry(_data);
+						_rawFileName +="_deEntry.swf";
+						FileUtil.createFileByByteArray(_storeFile,_rawFileName,_data);
+						Alert.show("解密处理完成!");
+
+						break;
+				}
+			}
+			
+			
+			/**加密
+			 */ 
+			private function doEntry(data:ByteArray):ByteArray
+			{
+				
+				var binKey:ByteArray=new ByteArray ;
+				binKey.writeUTF(EntryKey);//AESKey requires binary key
+				var aes:AESKey=new AESKey(binKey);
+				var bytesToEncrypt:int=data.length&~ 15;//make sure that it can be divided by 16, zero the last 4 bytes
+				for (var i:int=0; i<bytesToEncrypt; i+=32) {
+					aes.encrypt(data,i);
+				}
+				return data
+			}
+			
+				///解密 
+			private function decodeEntry(data:ByteArray):ByteArray
+			{
+				var binKey:ByteArray=new ByteArray() ;
+				binKey.writeUTF(EntryKey);//AESKey requires binary key
+				var aes:AESKey=new AESKey(binKey);
+				var bytesToDecrypt:int=data.length&~ 15;//make sure that it can be divided by 16, zero the last 4 bytes
+				for (var i:int=0; i<bytesToDecrypt; i+=32)
+				{
+					aes.decrypt(data,i);
+				}
+				return data;
+			}
+			
+			
+		]]>
+	</fx:Script>
+	<s:Button id="compressBtn" x="17" y="77" label="压缩处理" click="onClick(event)"/>
+	<s:Label x="22" y="10" text="进行操作"/>
+	<s:TextInput id="txt" x="10" y="31" width="267" height="38" mouseChildren="false" mouseEnabled="false"/>
+	<s:Button id="enryBtn" x="121" y="77" label="加密处理" click="onClick(event)"/>
+	<s:Button id="decodeBtn" x="207" y="78" label="解密" click="onClick(event)"/>
+</s:WindowedApplication>

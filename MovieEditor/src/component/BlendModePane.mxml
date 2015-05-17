@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" width="96" height="32"
+		 creationComplete="init(event)"
+		 >
+	<fx:Script>
+		<![CDATA[
+			import com.YFFramework.core.event.YFDispather;
+			import com.YFFramework.core.event.YFEventCenter;
+			
+			import events.ParamEvent;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			
+			import spark.events.IndexChangeEvent;
+			/**所采用的叠加模式
+			 */ 
+			public var mode:String;
+			[Bindable]
+			private var collection:ArrayCollection=new ArrayCollection([]);
+			protected function init(event:FlexEvent):void
+			{
+				collection.addItem(BlendMode.NORMAL);
+				collection.addItem(BlendMode.LAYER);
+				collection.addItem(BlendMode.DARKEN);
+				collection.addItem(BlendMode.MULTIPLY);
+				collection.addItem(BlendMode.LIGHTEN);
+				collection.addItem(BlendMode.SCREEN);
+				collection.addItem(BlendMode.OVERLAY);
+				collection.addItem(BlendMode.HARDLIGHT);
+				collection.addItem(BlendMode.ADD);
+				collection.addItem(BlendMode.SUBTRACT);
+				collection.addItem(BlendMode.DIFFERENCE);
+				collection.addItem(BlendMode.INVERT);
+				collection.addItem(BlendMode.ALPHA);
+				collection.addItem(BlendMode.ERASE);
+				comboBox.dataProvider=collection;
+				comboBox.selectedItem=BlendMode.ADD;
+//				sender(comboBox.selectedItem);
+				setMode(BlendMode.NORMAL);
+			}
+			
+			protected function comboBox_changeHandler(event:IndexChangeEvent):void
+			{
+				sender(comboBox.selectedItem);
+			}
+			
+			private function sender(mode:String):void
+			{
+				this.mode=mode;
+				YFEventCenter.Instance.dispatchEventWith(ParamEvent.BlenderModeChange,mode);
+			}
+			public function setMode(mode:String):void
+			{
+				comboBox.selectedItem=mode;
+				sender(mode);
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+	</fx:Declarations>
+	<s:ComboBox id="comboBox" x="5" y="6" width="81" change="comboBox_changeHandler(event)" contentBackgroundAlpha="0.7" />
+</s:Group>

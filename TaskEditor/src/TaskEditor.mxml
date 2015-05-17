@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009"
+					   xmlns:s="library://ns.adobe.com/flex/spark"
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   xmlns:ns1="*"
+					   width="750" height="702" xmlns:flex="com.YFFramework.air.flex.*"
+					   creationComplete="init(event)"
+					   >
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.YFFramework.core.net.loader.file.FileLoader;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			import mx.events.ListEvent;
+			
+			private static const FileExtention:String=".json";
+			/**任务     任务 id ----具体信息
+			 */ 
+			private var _dict:Object;
+			private var _collection:ArrayCollection=new ArrayCollection([]);
+			
+			/**任务列表
+			 */ 
+			[Bindable]
+			private var _xml:XML=<root />;
+			
+			private var _saveFile:File=File.desktopDirectory;
+			
+			protected function init(event:FlexEvent):void
+			{
+				_dict=new Object(); 
+				mTree.dataProvider=_xml;
+				addEvents();
+			}
+			
+			private function  addEvents():void
+			{
+				_saveFile.addEventListener(Event.SELECT,onSelect);
+				addEventListener(NativeDragEvent.NATIVE_DRAG_DROP,onDragDrop);
+				addEventListener(NativeDragEvent.NATIVE_DRAG_ENTER,onDragDrop);
+			}
+			private function onDragDrop(e:NativeDragEvent):void
+			{
+				//将拖入的文件以数组形式获得，指定拖入的数据是文件数组形式
+				var files:Array = e.clipboard.getData(ClipboardFormats.FILE_LIST_FORMAT) as Array;
+				//获得拖入的第一个文件
+				var file:File = File(files[0]);
+				switch(e.type)
+				{				
+					case NativeDragEvent.NATIVE_DRAG_ENTER:  
+						if( file.type==FileExtention)
+							NativeDragManager.acceptDragDrop(this);
+						break;
+					case NativeDragEvent.NATIVE_DRAG_DROP:
+						openFile(file.url);
+						break;
+				}
+			}
+			private function openFile(url:String):void
+			{
+				
+				var fileLoader:FileLoader=new FileLoader();
+				fileLoader.loadCompleteCallBack=loadComplete;
+				fileLoader.load(url);
+			}
+			
+			private function loadComplete(loader:FileLoader):void
+			{
+				var data:String=String(loader.data);
+				_dict=JSON.parse(data);
+				_xml=TreeDataManager.createXML(_dict);
+				mTree.dataProvider=_xml;
+				showFirtTask();
+			}
+			
+			private function showFirtTask():void
+			{
+				var showTask:int=getFirstTask();
+				if(showTask!=-1)selectTask(showTask);
+				else taskCell.clear();
+
+			}
+			
+			
+			private function onSelect(e:Event):void
+			{
+				var dir:File=_saveFile.parent;
+				var name:String=_saveFile.name;
+				TreeDataManager.createTaskFile(_dict,dir,name+FileExtention);
+			}
+			
+			
+			protected function itemClick(e:ListEvent):void
+			{
+				var obj:Object=mTree.selectedItem;
+				if(obj==null) return ;
+				var taskId:int=int(obj.@id);
+				selectTask(taskId);
+			}
+
+			/**删除任务
+			 */ 
+			private function deleteTask(taskId:int):void
+			{
+				delete  _dict[taskId];
+				_xml=TreeDataManager.createXML(_dict);
+				mTree.dataProvider=_xml;
+				showFirtTask();
+			}
+			private function getFirstTask():int
+			{
+				for (var taskId:String in _dict)
+				{
+					return int(taskId);
+				}
+				return -1;
+			}
+			
+			/**选中任务
+			 */ 
+			private function selectTask(taskId:int):void
+			{
+				var obj:Object=_dict[taskId];
+				taskCell.fillData(obj);
+			}
+			
+			
+			/**保存任务
+			 */ 
+			private function saveTask():void
+			{
+				var taskId:int=taskCell.getTaskId();
+				var taskName:String=taskCell.getTaskName();
+				var label:String=taskId+"--"+taskName;
+				if(taskId>0)
+				{
+					_dict[taskId]=taskCell.getData();
+					var obj:Object=_dict[taskId];
+					_xml=TreeDataManager.createXML(_dict);
+					mTree.dataProvider=_xml;
+				}
+				else 
+				{
+					Alert.show("任务id不能为0","提示:");
+				}
+			}
+			
+			
+			
+			protected function onClick(e:MouseEvent):void
+			{
+				switch(e.currentTarget)
+				{
+					case newBtn:
+						taskCell.clear();
+						break;
+					case deleteBtn:
+						var selectItem:Object=mTree.selectedItem;
+						if(selectItem)
+						{
+							var selectTaskId:int=selectItem.@id;
+							deleteTask(selectTaskId);	
+						}
+						break;
+					case saveTaskbtn:
+						saveTask();
+						break;
+					case createConfigBtn:
+						_saveFile.browseForSave("保存配置");
+						break;
+				}
+			}
+		
+			
+		]]>
+	</fx:Script>
+	<ns1:TaskCell id="taskCell" x="6" y="10">
+	</ns1:TaskCell>
+	<s:Button id="createConfigBtn" x="10" y="282" width="83" label="生成配置"
+			  click="onClick(event)"/>
+	<s:Button id="deleteBtn" x="10" y="232" label="删除当前任务" click="onClick(event)"/>
+	<s:Button id="newBtn" x="10" y="207" label="新建任务" click="onClick(event)"/>
+	<s:Button id="saveTaskbtn" x="10" y="258" label="保存当前任务"
+			  click="onClick(event)"/>
+	<flex:DragPane width="150" height="500" x="100" y="192" title="任务列表" id="treeContainer" backgroundAlpha="0" >
+		<mx:Tree id="mTree"  width="100%" height="100%" labelField="@label" showRoot="false" itemClick="itemClick(event)" />	
+	</flex:DragPane>
+
+</s:WindowedApplication>

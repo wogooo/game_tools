@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009"
+					   xmlns:s="library://ns.adobe.com/flex/spark"
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   width="641" height="556" creationComplete="initUI(event)"
+					   >
+	<fx:Script>
+		<![CDATA[
+			import com.YFFramework.air.FileUtil;
+			import com.YFFramework.core.event.YFEvent;
+			import com.YFFramework.core.event.YFEventCenter;
+			
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			
+			
+			/**保存js文件
+			 */ 
+			private var _fileArr:Array=[];
+			private var _file:File=File.desktopDirectory;
+			
+			private var content:String;
+			protected function initUI(event:FlexEvent):void
+			{
+//				addEventListener(NativeDragEvent.NATIVE_DRAG_DROP,onDragDrop);
+//				addEventListener(NativeDragEvent.NATIVE_DRAG_ENTER,onDragDrop);
+				_file.addEventListener(FileListEvent.SELECT_MULTIPLE,onFileSelect);
+				
+				YFEventCenter.Instance.addEventListener(TextDes.Down,onHandle);
+				YFEventCenter.Instance.addEventListener(TextDes.Upper,onHandle);
+			}
+			
+			private function onHandle(e:YFEvent):void
+			{
+				var file:File=e.param as File
+				var index:int=seachFile(file); 
+				if(index!=-1)
+				{
+					switch(e.type)
+					{
+						case TextDes.Down:
+							if(index<_fileArr.length-1)
+							{
+								_fileArr.splice(index,1);
+								_fileArr.splice(index+1,0,file);
+							}
+							break;
+						case TextDes.Upper:
+							if(index>0)
+							{
+								_fileArr.splice(index,1);
+								_fileArr.splice(index-1,0,file);
+							}
+							break;
+					}
+					updateView();
+
+				}
+			}
+			
+			
+			private function seachFile(file:File):int
+			{
+				var len:int=_fileArr.length;
+				for(var i:int=0;i!=len;++i)
+				{
+					if(_fileArr[i].url==file.url)
+					{
+						return i;
+					}
+				}
+				return -1;
+			}
+			
+			
+			private function onDragDrop(e:NativeDragEvent):void
+			{
+				//将拖入的文件以数组形式获得，指定拖入的数据是文件数组形式
+				var files:Array = e.clipboard.getData(ClipboardFormats.FILE_LIST_FORMAT) as Array;
+				//获得拖入的第一个文件
+				var file:File = File(files[0]);
+				switch(e.type)
+				{				
+					case NativeDragEvent.NATIVE_DRAG_ENTER:  
+						if(file.isDirectory)
+							NativeDragManager.acceptDragDrop(this);
+						break;
+					case NativeDragEvent.NATIVE_DRAG_DROP:
+						content="";
+						readDir(file);
+						FileUtil.createFile(file.parent,file.name+".js",content);
+						Alert.show("文件合成完成");
+						break;
+				}
+			}  
+			
+			protected function clickSave(event:MouseEvent):void
+			{
+				readFileList();
+			}
+
+			private function readFileList():void
+			{
+				
+				var root:String="E:\\js\\workplace\\yf2dEngine\\yf2d\\";
+				_fileArr=[];
+				
+				
+				_fileArr.push(root+"core\\YF2d.js");
+				_fileArr.push(root+"geom\\YFMath.js");
+				_fileArr.push(root+"geom\\Matrix.js");
+				_fileArr.push(root+"geom\\Point.js");
+				_fileArr.push(root+"geom\\Rectangle.js");
+
+				_fileArr.push(root+"util\\ConstructUtil.js");
+				
+				_fileArr.push(root+"update\\UpdateFuncManager.js");
+				_fileArr.push(root+"update\\SimpleUpdateManager.js");
+				_fileArr.push(root+"update\\MovieUpdateManager.js");
+
+				_fileArr.push(root+"data\\BitmapData.js");
+				_fileArr.push(root+"data\\MaskData.js");
+				_fileArr.push(root+"data\\MovieClipData.js");
+				
+				_fileArr.push(root+"events\\EventDispatcher.js");
+				_fileArr.push(root+"events\\Event.js");
+				
+				_fileArr.push(root+"core\\Interactive.js");
+				
+				_fileArr.push(root+"display\\DisplayObject.js");
+				_fileArr.push(root+"display\\DisplayObjectContainer.js");
+				_fileArr.push(root+"display\\Stage.js");
+				_fileArr.push(root+"core\\CanvasRender.js");
+
+				_fileArr.push(root+"display\\Quad.js");
+				_fileArr.push(root+"display\\Shape.js");
+				_fileArr.push(root+"display\\Sprite.js");
+				_fileArr.push(root+"display\\TextField.js");
+				_fileArr.push(root+"display\\MovieClip.js");
+				_fileArr.push(root+"display\\Fps.js");
+				
+				_fileArr.push(root+"net\\URLLoader.js");
+				
+				_fileArr.push(root+"tween\\TweenMoviePlay.js");
+
+				
+				var len:int=_fileArr.length
+				var y:int=0;
+				var view:TextDes;
+				var content:String="";
+				var file:File=File.desktopDirectory;
+				for(var i:int=0;i!=len;++i)
+				{
+					file.nativePath=_fileArr[i];
+					content +=readFile(file);
+				}
+				FileUtil.createFile(File.desktopDirectory,"yf2d.js",content);
+				Alert.show("生成完成");
+			}
+			private function onFileSelect(e:FileListEvent):void
+			{
+				var arr:Array=e.files;
+				_fileArr=_fileArr.concat(arr);
+				updateView();
+			}
+			private function readDir(dir:File):void
+			{
+				var arr:Array=dir.getDirectoryListing();
+				for each(var file:File in arr)
+				{
+					if(file.type==".js")
+					{
+						content +=readFile(file);
+					}
+					else if(file.isDirectory)
+					{
+						readDir(file);
+					}
+				}
+			}
+			
+			private function readFile(file:File):String
+			{
+				var content:String="";
+				var bytes:ByteArray=new ByteArray();
+				var stream:FileStream=new FileStream();
+				stream.open(file,FileMode.READ);
+				stream.readBytes(bytes,0,stream.bytesAvailable);
+				stream.close();
+				bytes.position=0;
+				content=bytes.readUTFBytes(bytes.length);
+				return content;
+			}
+			
+			protected function click(event:MouseEvent):void
+			{
+				
+				var filter:FileFilter=new FileFilter("js文件", "*.js")
+				_file.browseForOpenMultiple("选择文件",[filter]);
+			}
+			
+			private function updateView():void
+			{
+				container.removeAllElements();
+				
+				var len:int=_fileArr.length
+				var y:int=0;
+				var view:TextDes;
+					
+				for(var i:int=0;i!=len;++i)
+				{
+					view=new TextDes();
+					view.file=_fileArr[i];
+					container.addElement(view);
+					view.y=y;
+					y +=view.height;
+					view.updateView();
+				}
+			}
+			
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<s:Label x="547" y="131" color="#E90C0C" text="Js文件合成"/>
+	<s:Button id="addBtn" x="547" y="87" label="添加" click="click(event)"/>
+	<s:Scroller x="10" y="10" width="511" height="531">
+		<s:VGroup width="100%" height="100%" id="container">
+		</s:VGroup>
+	</s:Scroller>
+	<s:Button id="savBtn" x="547" y="214" label="保存" click="clickSave(event)"/>
+</s:WindowedApplication>

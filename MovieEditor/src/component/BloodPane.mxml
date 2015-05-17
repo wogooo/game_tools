@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<flex:DragPane xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:flex="com.YFFramework.air.flex.*" width="212" height="72"
+			   title="血条" 
+			   >
+	
+	<fx:Script>
+		<![CDATA[
+			import events.ParamEvent;
+			
+			import mx.events.FlexEvent;
+			
+			import type.TypeBlood;
+			protected function closeBtnClick(event:MouseEvent):void
+			{
+				visible=false;
+			}
+			
+			protected function mouseClick(event:MouseEvent):void
+			{
+				// TODO Auto-generated method stub
+				if(btn.label=="显示")
+				{
+					btn.label="隐藏";		
+					dispatchEvent(new ParamEvent(ParamEvent.Blood,TypeBlood.BloodShow));
+				}
+				else 
+				{
+					btn.label="显示";	
+					dispatchEvent(new ParamEvent(ParamEvent.Blood,TypeBlood.BloodHide) );
+				}
+			}
+			
+			
+			public function initData(x:int,y:int):void
+			{
+				xHeader.text=String(x);
+				yHeader.text=String(y);
+			}
+			
+			protected function focusOut(event:FocusEvent):void
+			{
+				var myX:int=int(xHeader.text);
+				var myY:int=int(yHeader.text);
+				dispatchEvent(new ParamEvent(ParamEvent.BloodPaneUpdate,{x:myX,y:myY}));
+				stage.focus=null
+			//	initData(myX,myY);
+
+			}
+			
+			protected function enterEvent(event:FlexEvent):void
+			{
+				Object(event.currentTarget).dispatchEvent(new FocusEvent(FocusEvent.FOCUS_OUT));
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<s:Label id="closeBtn" x="189" y="-24" color="#FE0707" fontSize="18" text="X" mouseChildren="false" buttonMode="true" click="closeBtnClick(event)"/>
+	<s:Button id="btn" x="8" y="8" width="54" label="显示" click="mouseClick(event)"/>
+	<s:TextInput id="xHeader" x="84" y="7" width="44" focusOut="focusOut(event)" enter="enterEvent(event)"/>
+	<s:TextInput id="yHeader" x="151" y="7" width="44" focusOut="focusOut(event)" enter="enterEvent(event)"/>
+	<s:Label x="137" y="12" text="y"/>
+	<s:Label x="71" y="13" text="X"/>
+</flex:DragPane>

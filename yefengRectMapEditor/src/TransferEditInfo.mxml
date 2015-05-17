@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:BorderContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				   xmlns:s="library://ns.adobe.com/flex/spark" 
+				   xmlns:mx="library://ns.adobe.com/flex/mx" width="300" height="176"
+				   creationComplete="init(event)"
+				   >
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			
+			///传送点具体信息
+			public var callBack:Function;
+			
+			[Bindable]
+			private var _transferArr:ArrayCollection=new ArrayCollection([]);
+			
+			protected function init(event:FlexEvent):void
+			{
+				transferType.dataProvider=_transferArr;
+				_transferArr.addItem({name:"普通===1",type:1});
+				_transferArr.addItem({name:"特殊===2",type:2});
+				transferType.selectedIndex=0;
+			}
+
+			protected function onClick(event:MouseEvent):void
+			{
+				switch(event.currentTarget)
+				{
+					case okBtn:
+						var data:Object={mapId:int(mapIdTxt.text),mapName:mapNameTxt.text,x:int(mapPosX.text),y:int(mapPosY.text),type:transferType.selectedItem.type};
+						callBack(data);
+						dispose();
+						break;
+					case cancelBtn:
+						dispose();
+						break;
+				}
+			}
+			
+			
+			private function dispose():void
+			{
+				callBack=null;
+				PopUpManager.removePopUp(this);
+				removeAllElements();
+			}
+			
+			
+			
+			
+			
+		]]>
+	</fx:Script>
+	<s:Label x="37" y="18" text="跳转地图Id"/>
+	<s:Label x="37" y="81" text="跳转地图名称"/>
+	<s:Label x="35" y="112" text="跳转地图坐标"/>
+	<s:TextInput id="mapIdTxt" x="129" y="14" restrict="0-9"/>
+	<s:TextInput id="mapPosX" x="128" y="109" width="55" restrict="0-9"/>
+	<s:TextInput id="mapPosY" x="205" y="109" width="52" restrict="0-9"/>
+	<s:Button id="okBtn" x="54" y="146" label="确定" click="onClick(event)"/>
+	<s:Button id="cancelBtn" x="184" y="146" label="取消" click="onClick(event)"/>
+	<s:Label x="115" y="119" text="x"/>
+	<s:Label x="195" y="116" text="y"/>
+	<s:TextInput id="mapNameTxt" x="129" y="80" />
+	<s:Label x="36" y="50" text="传送点类型" toolTip="用于小地图传送点样式"/>
+	<s:ComboBox id="transferType" x="129" y="49" width="128" labelField="name" toolTip="设置此处，可以改变小地图传送点的样式"/>
+</s:BorderContainer>
