@@ -1,0 +1,17 @@
+package com.YFFramework.game.core.module.mapScence.world.model
+{
+	/**2012-8-28 上午11:44:20
+	 *@author yefeng
+	 */
+	public class MonsterMoveVo extends PlayerMoveVo
+	{
+		
+		/**怪物的动态id 
+		 */ 
+		public var dyId:uint;
+		public function MonsterMoveVo()
+		{
+			super();
+		}
+	}
+}
