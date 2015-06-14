@@ -170,6 +170,35 @@
 			</icon> 
 			
 		 </fileType>
+		 
+		 <!-- Defines one file type. Optional. -->
+		<fileType>
+
+			<!-- The name that the system displays for the registered file type. Required. -->
+			 <name>yefengRectMapEditor</name> 
+
+			<!-- The extension to register. Required. -->
+			 <extension>jsMap</extension>
+			
+			<!-- The description of the file type. Optional. -->
+				<description>stage3d矩形地编</description> 
+			
+			<!-- The MIME content type. -->
+			 <contentType>application/octet-stream</contentType>
+			
+			<!-- The icon to display for the file type. Optional. -->
+			<icon>
+			
+				<image16x16>assets/16.png</image16x16>
+				<image32x32>assets/32.png</image32x32>
+				<image48x48>assets/48.png</image48x48>
+				<image128x128>assets/128.png</image128x128>
+			
+			</icon> 
+			
+		 </fileType>
+		 
+		 
 	</fileTypes> 
 
     <!-- iOS specific capabilities -->

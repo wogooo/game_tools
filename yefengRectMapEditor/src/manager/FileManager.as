@@ -172,7 +172,8 @@
 				FileUtil.createFileByByteArray(storeDir,mapIdName+TypeFile.XXExtention,byteArr);
 				
 		//		var str:String=JSON.stringify(obj);
-		//		FileUtil.createFile(storeDir,name+".map",str);
+				//生成json 给 js用
+				FileUtil.createFile(storeDir,mapIdName+TypeFile.JSMapExtention,objStr);
 		}
 		
 //		/**创建 id__mapScene.csv文件

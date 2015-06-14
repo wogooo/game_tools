@@ -115,10 +115,10 @@
 	<s:Button id="browseBtn" x="314" y="136" width="55" label="浏览" click="clickHandler(event)"/>
 	<s:Button id="cancelBtn" x="277" y="216" width="55" label="取消" click="clickHandler(event)"/>
 	<s:Button id="okBtn" x="113" y="216" width="55" label="确定" click="clickHandler(event)"/>
-	<s:TextInput id="nameTF" x="67" y="32" text="10001" restrict="0-9"/>
+	<s:TextInput id="nameTF" x="67" y="32" text="1001" restrict="0-9"/>
 	<s:Label x="203" y="37" text="地图名"/>
 	<s:TextInput id="mapdescript" x="254" y="31" text="新手村" />
-	<s:TextInput id="tileWTF" x="-147" y="-24" width="57" text="30"/>
+	<s:TextInput id="tileWTF" x="62" y="89" width="57" text="30"/>
 	<s:TextInput id="tileHTF" x="166" y="89" width="61" text="30"/>
 	<s:TextInput id="storeTF" x="30" y="184" width="276"/>
 	<s:Button id="storeBtn" x="314" y="184" width="55" label="存储" click="clickHandler(event)"/>
