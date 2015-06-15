@@ -31,6 +31,7 @@
 			import manager.SWFData;
 			import manager.SourceCache;
 			import manager.XXFileLoader;
+			import manager.XXFileManager;
 			
 			import model.TypeRoad;
 			
@@ -262,6 +263,20 @@
 				_monsterZoneLayer.removeAllElements();
 			}
 			
+			 
+			private function jsMapComplete(fileLoader:FileLoader):void
+			{
+				var data:String=String(fileLoader.data);
+				xxObj = XXFileManager.analyseJsMap(data);
+				
+				handleXXFile();
+				_mapLayer.source=imageUrl;
+				
+				var t:TimeOut=new TimeOut(5000,handleAllmark);  ///延时 处理   防止超大地图卡死
+				t.start();
+
+			}
+
 			private function xxLoadComplete(obj:Object,data:Object):void
 			{
 				xxObj=obj;	
@@ -302,10 +317,12 @@
 			private  function openFile(url:String):void
 			{
 				var suffix:String=UtilString.getSuffix(url);
+				var fileLoader:FileLoader;
+				var exactName:String;
 				switch(suffix)
 				{
 					case "xxc":
-						var exactName:String=UtilString.getExactName(url);
+						exactName=UtilString.getExactName(url);
 //						_mapLayer.source=_storeFile.url+"/"+exactName+".jpg";
 						imageUrl=_storeFile.url+"/"+exactName+".jpg";
 						_mapIdName=exactName;
@@ -314,9 +331,19 @@
 						xxLoader.loadCompleteCallback=xxLoadComplete;
 						xxLoader.initData(url);
 						break;
+					case "jsMap":  //json  类型  ，用于js语音
+						exactName=UtilString.getExactName(url);
+						imageUrl=_storeFile.url+"/"+exactName+".jpg";
+						_mapIdName=exactName;
+						_xx2dUrl=url;
+						fileLoader=new FileLoader();
+						fileLoader.loadCompleteCallBack=jsMapComplete;
+						fileLoader.load(url);
+
+						break;
 					case "monster":   ///文本文件
 					case "json":   ///文本文件
-						var fileLoader:FileLoader=new FileLoader();
+						fileLoader=new FileLoader();
 						fileLoader.loadCompleteCallBack=monsterLoaded;
 						fileLoader.load(url);
 						break;
@@ -672,7 +699,7 @@
 				switch(e.type)
 				{				
 					case NativeDragEvent.NATIVE_DRAG_ENTER:  
-						if(file.type==".xxc"||file.type==".monster" ||file.type==".json")
+						if(file.type==".xxc"||file.type==".monster" ||file.type==".json"||file.type==".jsMap")
 							NativeDragManager.acceptDragDrop(this);
 						break;
 					case NativeDragEvent.NATIVE_DRAG_DROP:

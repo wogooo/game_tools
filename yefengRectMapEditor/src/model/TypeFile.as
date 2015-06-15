@@ -6,6 +6,8 @@ package model
 	 */
 	public class TypeFile
 	{	
+		public static const   JSMapExtention:String=".jsMap";
+
 		/**  地图文件
 		 */
 		public static const   XXExtention:String=".xxc";

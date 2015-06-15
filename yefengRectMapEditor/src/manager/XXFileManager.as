@@ -45,5 +45,19 @@ package manager
 			return obj;
 		}
 		
+		
+		//解析加载进来的json数据    用于JSMap类型
+		public static  function analyseJsMap(objStr:String):Object
+		{
+			var obj:Object=JSON.parse(objStr);
+			///将地图场景信息变成数据 
+			var arr:Array= String(obj.floor).split(""); 
+			obj.floor=null;
+			obj.floor=arr;
+			return obj;		
+		}
+
+		
+		
 	}
 }
