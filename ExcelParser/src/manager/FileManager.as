@@ -101,9 +101,16 @@ package manager
 			
 			saveFile(clientStr,dir,fileName+".lua");
 			
+			//json生成 替换内部的数组 "[]"为 []
+			
+			var  reg1:RegExp =/"[/g; // new RegExp('"[',"g");
+			serverStr=serverStr.replace(reg1,"[");
+			var  reg2:RegExp = /]"/g;//new RegExp(']"',"g");
+			serverStr=serverStr.replace(reg2,"]");
+			
 			saveFile(serverStr,dir,fileName+".json");
 			
-			LuaManagerCreate.createLuaManager(fileName,serverArr[0].des,serverArr[0].values,dir);
+			LuaManagerCreate.createLuaManager(fileName,clientArr[0].des,clientArr[0].values,dir);
 			if (serverArr.length >0&&createjava)
 			{
 				JavaFileCreate.createJavaVoFile(fileName,serverArr[0].des,serverArr[0].values,dir);

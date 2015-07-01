@@ -1,8 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
-					   xmlns:s="library://ns.adobe.com/flex/spark" 
-					   xmlns:mx="library://ns.adobe.com/flex/mx">
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009"
+					   xmlns:s="library://ns.adobe.com/flex/spark"
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   width="1148" height="658">
 	<fx:Declarations>
 		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
 	</fx:Declarations>
+	<s:Button x="10" y="60" label="按钮"/>
+	<s:Button x="10" y="251" label="按钮"/>
+	<s:Button x="10" y="211" label="按钮"/>
+	<s:Button x="9" y="173" label="按钮"/>
+	<s:Button x="10" y="144" label="按钮"/>
+	<s:Button x="10" y="103" label="按钮"/>
 </s:WindowedApplication>
