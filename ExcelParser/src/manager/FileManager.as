@@ -103,11 +103,13 @@ package manager
 			
 			//json生成 替换内部的数组 "[]"为 []
 			
-			var  reg1:RegExp = new RegExp('"\[',"g");  ///"[/g; //
-			serverStr=serverStr.replace(reg1,"\[");
-			var  reg2:RegExp = /]"/g;//new RegExp(']"',"g");
-			serverStr=serverStr.replace(reg2,"]");
+//			var  reg1:RegExp = new RegExp('"\[',"g");  ///"[/g; //
+//			serverStr=serverStr.replace(reg1,"\[");
+//			var  reg2:RegExp = /]"/g;//new RegExp(']"',"g");
+//			serverStr=serverStr.replace(reg2,"]");
 			
+			serverStr =replaceAll(serverStr,'"\\[',"[");//替换数组 ,字符串数组转换为字符串
+			serverStr =replaceAll(serverStr,']"',"]");
 			saveFile(serverStr,dir,fileName+".json");
 			
 			LuaManagerCreate.createLuaManager(fileName,clientArr[0].des,clientArr[0].values,dir);
@@ -233,6 +235,21 @@ package manager
 		
 		
 		
+		private static function replaceAll(str:String,seach:String,replace:String):String
+		{
+//			var index :int = 1;
+//			while(index)
+//			{
+//				index = str.indexOf(seach);
+//				if (index!=-1)str = str.replace(seach,replace);
+//			}
+//			return str;
+			//RegExp 这家伙你可以把他当作正则的入口,/a/是要替换的字符，g全部有关字符串都将被替换 
+			
+			var  reg:RegExp = new RegExp(seach,"g");  ///"[/g; //
+			str=str.replace(reg,replace);
+			return str;
+		}
 		
 		
 		
