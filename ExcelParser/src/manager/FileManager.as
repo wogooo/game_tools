@@ -103,8 +103,8 @@ package manager
 			
 			//json生成 替换内部的数组 "[]"为 []
 			
-			var  reg1:RegExp =/"[/g; // new RegExp('"[',"g");
-			serverStr=serverStr.replace(reg1,"[");
+			var  reg1:RegExp = new RegExp('"\[',"g");  ///"[/g; //
+			serverStr=serverStr.replace(reg1,"\[");
 			var  reg2:RegExp = /]"/g;//new RegExp(']"',"g");
 			serverStr=serverStr.replace(reg2,"]");
 			
