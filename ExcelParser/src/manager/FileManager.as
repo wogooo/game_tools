@@ -112,7 +112,10 @@ package manager
 			serverStr =replaceAll(serverStr,']"',"]");
 			saveFile(serverStr,dir,fileName+".json");
 			
-			LuaManagerCreate.createLuaManager(fileName,clientArr[0].des,clientArr[0].values,dir);
+			if ( clientArr.length >0)
+			{
+				LuaManagerCreate.createLuaManager(fileName,clientArr[0].des,clientArr[0].values,dir);
+			}
 			if (serverArr.length >0&&createjava)
 			{
 				JavaFileCreate.createJavaVoFile(fileName,serverArr[0].des,serverArr[0].values,dir);
