@@ -98,7 +98,7 @@
 //					trace(sheet)
 					if (sheet.name=="main")
 					{
-						var str:String = FileManager.parseSheet(sheet,dir,fileName,alert,checkObj,javaId.selected);
+						var str:String = FileManager.parseSheet(sheet,dir,fileName,alert,checkObj,javaId.selected,luaId.selected);
 						infoTxt.text +=str;
 					}
 				}
@@ -168,7 +168,9 @@
 	<s:TextArea id="infoTxt" x="4" y="52" width="380" height="396"/>
 	<s:Label x="221" y="9" text="main"/>
 	<s:Label x="289" y="9" text="check"/>
-	<s:CheckBox id="javaId" x="54" y="10" label="创建java" selected="true"/>
+	<s:CheckBox id="javaId" x="26" y="10" label="创建java" selected="true" toolTip="创建java manager文件"/>
+	<s:CheckBox id="luaId" x="99" y="11" label="创建lua" selected="false" toolTip="创建lua  lua manager文件" />
+
 	<s:Label x="206" y="32" text="Both"/>
 	<s:Label x="258" y="32" text="Server"/>
 	<s:Label x="317" y="32" text="Client"/>

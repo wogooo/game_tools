@@ -19,7 +19,7 @@ package manager
 		
 		
 		//将 sheet转化为 json或者lua 文件
-		public static function parseSheet(sheet:Sheet,dir:File,fileName:String,alert:Boolean,checkObj:Object=null,createjava:Boolean=false):String
+		public static function parseSheet(sheet:Sheet,dir:File,fileName:String,alert:Boolean,checkObj:Object=null,createjava:Boolean=false,createLuaFile:Boolean=false):String
 		{
 			
 			var checkStr:String ="";
@@ -94,28 +94,29 @@ package manager
 			/// clientArr  serverArr  存储了我们需要生成的数据
 			
 			//生成客户端lua数据
-			var clientStr:String = createLua(clientArr,fileName);
+			if (createLuaFile)
+			{
+				var clientStr:String = createLua(clientArr,fileName);
+				saveFile(clientStr,dir,fileName+".lua");
+			}
 			//生成服务端json数据
 			var serverStr:String = createJson(serverArr);
 //			trace(clientStr);
 			
-			saveFile(clientStr,dir,fileName+".lua");
 			
-			//json生成 替换内部的数组 "[]"为 []
-			
-//			var  reg1:RegExp = new RegExp('"\[',"g");  ///"[/g; //
-//			serverStr=serverStr.replace(reg1,"\[");
-//			var  reg2:RegExp = /]"/g;//new RegExp(']"',"g");
-//			serverStr=serverStr.replace(reg2,"]");
 			
 			serverStr =replaceAll(serverStr,'"\\[',"[");//替换数组 ,字符串数组转换为字符串
 			serverStr =replaceAll(serverStr,']"',"]");
 			saveFile(serverStr,dir,fileName+".json");
 			
-			if ( clientArr.length >0)
+			if (createLuaFile)
 			{
-				LuaManagerCreate.createLuaManager(fileName,clientArr[0].des,clientArr[0].values,dir);
+				if ( clientArr.length >0)
+				{
+					LuaManagerCreate.createLuaManager(fileName,clientArr[0].des,clientArr[0].values,dir);
+				}
 			}
+
 			if (serverArr.length >0&&createjava)
 			{
 				JavaFileCreate.createJavaVoFile(fileName,serverArr[0].des,serverArr[0].values,dir);
