@@ -178,7 +178,7 @@ package manager
 					}
 					labelColor = '"'+labelColor+'"';
 					
-					totalStr += Tab +Tab + tagName+".setStrokeStyle("+"#000000"+");"+NextLine;
+					totalStr += Tab +Tab + tagName+".setStrokeStyle("+'"#000000"'+");"+NextLine;
 					totalStr += Tab + Tab +tagName+".setTextStyle("+labelColor+");"+NextLine;
 					totalStr += Tab + Tab +tagName+".setTextSize("+objectData.FontSize+");"+NextLine;
 					totalStr += Tab + Tab +tagName+".setText('"+objectData.LabelText+"');"+NextLine;
@@ -206,7 +206,7 @@ package manager
 					}
 					labelColor = '"'+labelColor+'"';
 					
-					totalStr += Tab +Tab + tagName+".setStrokeStyle("+"#000000"+");"+NextLine;
+					totalStr += Tab +Tab + tagName+".setStrokeStyle("+'"#000000"'+");"+NextLine;
 					totalStr += Tab + Tab +tagName+".setTextStyle("+labelColor+");"+NextLine;
 					totalStr += Tab + Tab +tagName+".setTextSize("+objectData.FontSize+");"+NextLine;
 					totalStr += Tab +Tab + tagName+".setText('"+objectData.LabelText+"');"+NextLine;
