@@ -2,14 +2,98 @@
 <s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009"
 					   xmlns:s="library://ns.adobe.com/flex/spark"
 					   xmlns:mx="library://ns.adobe.com/flex/mx"
-					   width="1148" height="658">
-	<fx:Declarations>
-		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
-	</fx:Declarations>
-	<s:Button x="10" y="60" label="按钮"/>
-	<s:Button x="10" y="251" label="按钮"/>
-	<s:Button x="10" y="211" label="按钮"/>
-	<s:Button x="9" y="173" label="按钮"/>
-	<s:Button x="10" y="144" label="按钮"/>
-	<s:Button x="10" y="103" label="按钮"/>
+					   width="390" height="258" initialize="init(event)">
+	<fx:Script>
+		<![CDATA[
+			import com.YFFramework.air.FileUtil;
+			
+			import manager.FileManager;
+			
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			import mx.managers.DragManager;
+			
+			protected function init(event:FlexEvent):void
+			{
+				this.addEventListener(NativeDragEvent.NATIVE_DRAG_ENTER,onDragEvent);
+				this.addEventListener(NativeDragEvent.NATIVE_DRAG_DROP,onDragEvent);
+				
+			}
+			
+			protected function onDragEvent(event:NativeDragEvent):void
+			{
+				var dropfiles:Array= event.clipboard.getData(ClipboardFormats.FILE_LIST_FORMAT) as Array;
+				var file:File = dropfiles[0];
+				
+				switch(event.type)
+				{
+					case NativeDragEvent.NATIVE_DRAG_ENTER:
+						if (file.type ==".json"||file.isDirectory)
+							DragManager.acceptDragDrop(this);
+						break;
+					case NativeDragEvent.NATIVE_DRAG_DROP:
+						if (file.type ==".json")
+						{
+							readFile(file);
+						}
+						else if (file.isDirectory)
+						{
+							readDir(file);
+							Alert.show("生成完成");
+						}
+						break;
+				}
+			}
+			
+			
+			protected function readDir(file:File):void
+			{
+				var arr:Array=file.getDirectoryListing();
+				for each (var file:File in arr)
+				{
+					if (file.isDirectory )
+					{
+						readDir(file)
+					}
+					else if (file.type ==".json")
+					{
+						readFile(file,false)
+					}
+				}
+			}
+			
+			protected function readFile(file:File,alert:Boolean=true):void
+			{
+				var content :String = "";
+
+				var url:String = file.url;
+				var fileStream:FileStream= new FileStream();
+				fileStream.open(file,FileMode.READ);
+				var bytes:ByteArray=new ByteArray();
+				content = fileStream.readUTFBytes(fileStream.bytesAvailable);
+				fileStream.close();
+				
+				var dir:File=file.parent;
+				var fileName:String =file.name;
+				fileName = fileName.substr(0,fileName.length - 5) ;// .json
+				
+				var jsonData :Object =JSON.parse(content);
+				
+				var saveDir:File = file.parent;
+				saveDir = FileUtil.createDirectory(saveDir.url+"/"+"js"); //存储目录
+				FileManager.CreateJS(jsonData,fileName,saveDir);
+				if (alert)Alert.show("生成完成");
+				
+			}
+			
+			
+			
+			
+			
+			
+			
+			
+		]]>
+	</fx:Script>
+	<s:Label x="77" y="114" fontSize="20" text="cocostudio json数据解析器"/>
 </s:WindowedApplication>
