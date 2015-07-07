@@ -70,7 +70,8 @@ package manager
 		{
 			var fileName :String = getRealFilename(fileName);
 			
-			var  totalStr  :String ="(function()" + NextLine + "{" + NextLine;  //总的字符串
+			var  totalStr  :String ="// create by yefeng UIEditor "+ NextLine;
+			totalStr +="(function()" + NextLine + "{" + NextLine;  //总的字符串
 			
 
 			
