@@ -18,6 +18,8 @@ package manager
 		
 		public static const Type_Image:String = "ImageViewObjectData";
 		
+		public static const Type_Sprite:String = "SpriteObjectData";
+
 		
 		
 		public static const Type_Button :String= "ButtonObjectData";
@@ -94,7 +96,7 @@ package manager
 			
 			var rootParentStr:String = "this";
 			//遍历所有子节点
-			for (var i:int = 0;i!=len;++i	)
+			for (var i:int = 0;i!=len;++i	)  ///处理子对象 ， 子多谢都是处于根容器下 这个时候  rooSize.y = 根容器size 的Y
 			{
 				var objectData :Object = children[i];
 				
@@ -105,9 +107,9 @@ package manager
 			totalStr += Tab + "}"+NextLine;
 			
 			
-			totalStr += Tab +fileName+".prototype.getChildByTag = function(tag)"+NextLine;
+			totalStr += Tab +fileName+".prototype.getChildByName = function(name)"+NextLine;
 			totalStr += Tab + "{"+NextLine;
-			totalStr += Tab + Tab +'return this["__"+tag] ;'+NextLine;
+			totalStr += Tab + Tab +'return this["__"+name] ;'+NextLine;
 			totalStr += Tab + "}"+NextLine;
 			
 			totalStr += NextLine+NextLine;
@@ -127,13 +129,13 @@ package manager
 			var tagName :String = addPropObj.tagName
 			var addChildStr :String = addPropObj.addChildStr
 			totalStr = addPropObj.totalStr;
-			if(objectData.Children) //如果有子对象
+			if(objectData.Children) //如果有子对象   处理子对象 ， 子多谢都是处于非根容器下 这个时候  rooSize.y =0
 			{
 				var len:int = objectData.Children.length;
 				for (var i:int = 0;i!=len;++i	)
 				{
 					var childObjectData :Object= objectData.Children[i];
-					totalStr =handleObject(childObjectData,tagName,totalStr,rootH,addChildStr);
+					totalStr =handleObject(childObjectData,tagName,totalStr,objectData.Size.Y,addChildStr); //处理子对象 ， 
 					
 				}
 
@@ -145,19 +147,22 @@ package manager
 		public static function handleObjectDataProp(objectData:Object,totalStr:String,rootH:int,objectDataParent:String,parentAddStr:String):Object
 		{
 			
+//			var uiDirStr:String ="Game.URLTool.getUIModuleDir()";
 			
-			var tagName:String  = "this.__"+objectData.Tag;
+			
+			var tagName:String  = "this.__"+objectData.Name  //objectData.Tag;
 			
 			var addChildStr:String ="addChild"; //addItem			
 			var labelColor:String;
 			switch(objectData.ctype)
 			{
 				case Type_Image:
+				case Type_Sprite:
 					totalStr += Tab +Tab + tagName+" = new YFFramework.YFImage();"+NextLine;
 					addChildStr = "addChild";
 					//只读取正常状态的图片
 					var imagePath:String = objectData.FileData.Path;
-					totalStr += Tab +Tab + tagName+'.init("'+imagePath+'");'+NextLine;
+					totalStr += Tab +Tab + tagName+'.init(Game.URLTool.getUIModuleDir()+"'+imagePath+'");'+NextLine;
 					break;
 
 				case Type_Button:
@@ -165,7 +170,7 @@ package manager
 					addChildStr = "addChild";
 					//只读取正常状态的图片
 					var btnPath:String = objectData.NormalFileData.Path;
-					totalStr += Tab +Tab + tagName+'.setSkin("'+btnPath+'");'+NextLine;
+					totalStr += Tab +Tab + tagName+'.setSkin(Game.URLTool.getUIModuleDir()+"'+btnPath+'");'+NextLine;
 					break;
 				case Type_Label:
 					totalStr += Tab +Tab + tagName+" = new YF2d.TextView();"+NextLine;
@@ -190,10 +195,12 @@ package manager
 					break;
 				case Type_ProgressBar:
 					addChildStr = "addChild";
+					var progressInfo:int = 100;
+					if(objectData.ProgressInfo!=null) progressInfo = objectData.ProgressInfo;
 					totalStr += Tab +Tab + tagName+" = new YFFramework.YFProgressBar();"+NextLine;  //ProgressInfo
 					var url:String = objectData.ImageFileData.Path;
-					totalStr += Tab + Tab +tagName+".setSkin('"+url+"','"+url+"');"+NextLine;
-					totalStr += Tab + Tab +tagName+".setPercent("+objectData.ProgressInfo+");"+NextLine;
+					totalStr += Tab + Tab +tagName+".setSkin(Game.URLTool.getUIModuleDir()+'"+url+"',Game.URLTool.getUIModuleDir()+'"+url+"');"+NextLine;
+					totalStr += Tab + Tab +tagName+".setPercent("+progressInfo+");"+NextLine;
 					break;
 				case Type_TextFiled:
 					totalStr += Tab +Tab + tagName+" = new YF2d.TextField();"+NextLine;
@@ -239,14 +246,14 @@ package manager
 			var myAlpha :Number = Math.floor(alpha*100 / 255)/100;
 			
 			totalStr += Tab + Tab +tagName+".setSize("+objectData.Size.X+","+objectData.Size.Y+");"+NextLine;
-			totalStr += Tab +Tab + tagName+".setXY("+Math.round(objectData.Position.X-objectData.Size.X*anchorPointX)+","+Math.round(rootH -objectData.Position.Y-objectData.Size.Y*anchorPointY)+");"+NextLine;
+			totalStr += Tab +Tab + tagName+".setXY("+Math.round(objectData.Position.X-objectData.Size.X*anchorPointX)+","+Math.round(rootH -objectData.Position.Y-objectData.Size.Y*(1-anchorPointY))+");"+NextLine;
 			totalStr += Tab +Tab + tagName+".setScale("+objectData.Scale.ScaleX+","+objectData.Scale.ScaleY+");"+NextLine;
 			totalStr += Tab + Tab +tagName+".setAlpha("+myAlpha+");"+NextLine;
 			totalStr += Tab + Tab +tagName+".setVisible("+VisibleForFrame+");"+NextLine;
 			totalStr += Tab +Tab + tagName+".setMouseEnabled("+TouchEnable+");"+NextLine;
 			
 			//动态添加tag属性
-			totalStr += Tab + Tab +tagName+".tag = "+objectData.Tag +";"+NextLine;
+			totalStr += Tab + Tab +tagName+".name = '"+objectData.Name +"';"+NextLine;
 			
 			totalStr += Tab +Tab +objectDataParent+"."+ parentAddStr+"("+tagName+");"+NextLine;
 			return {tagName:tagName,addChildStr:addChildStr,totalStr:totalStr};
