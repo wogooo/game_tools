@@ -177,10 +177,12 @@ package manager
 					addChildStr = "addChild";
 					// FontSize  CColor()
 					labelColor = "#FFFFFF";
-					if( objectData.CColor.R!=null)
-					{
-						labelColor ="#"+ Color.rgb(objectData.CColor.R,objectData.CColor.G,objectData.CColor.B).toString(16);
-					}
+					if( objectData.CColor.R==null)  objectData.CColor.R= 255
+					if( objectData.CColor.G==null)  objectData.CColor.G= 255
+					if( objectData.CColor.B==null)  objectData.CColor.B= 255
+						
+					labelColor ="#"+ Color.rgb(objectData.CColor.R,objectData.CColor.G,objectData.CColor.B).toString(16);
+					
 					labelColor = '"'+labelColor+'"';
 					
 					totalStr += Tab +Tab + tagName+".setStrokeStyle("+'"#000000"'+");"+NextLine;
@@ -207,10 +209,13 @@ package manager
 					addChildStr = "addChild";
 					// FontSize  CColor()
 					labelColor = "#FFFFFF";
-					if( objectData.CColor.R!=null)
-					{
-						labelColor ="#"+ Color.rgb(objectData.CColor.R,objectData.CColor.G,objectData.CColor.B).toString(16);
-					}
+					var myColor:Object ={}
+					if( objectData.CColor.R==null)  objectData.CColor.R= 255
+					if( objectData.CColor.G==null)  objectData.CColor.G= 255
+					if( objectData.CColor.B==null)  objectData.CColor.B= 255
+					
+					labelColor ="#"+ Color.rgb(objectData.CColor.R,objectData.CColor.G,objectData.CColor.B).toString(16);
+
 					labelColor = '"'+labelColor+'"';
 					
 					totalStr += Tab +Tab + tagName+".setStrokeStyle("+'"#000000"'+");"+NextLine;
@@ -247,10 +252,11 @@ package manager
 			
 			totalStr += Tab + Tab +tagName+".setSize("+objectData.Size.X+","+objectData.Size.Y+");"+NextLine;
 			totalStr += Tab +Tab + tagName+".setXY("+Math.round(objectData.Position.X-objectData.Size.X*anchorPointX)+","+Math.round(rootH -objectData.Position.Y-objectData.Size.Y*(1-anchorPointY))+");"+NextLine;
-			totalStr += Tab +Tab + tagName+".setScale("+objectData.Scale.ScaleX+","+objectData.Scale.ScaleY+");"+NextLine;
-			totalStr += Tab + Tab +tagName+".setAlpha("+myAlpha+");"+NextLine;
-			totalStr += Tab + Tab +tagName+".setVisible("+VisibleForFrame+");"+NextLine;
-			totalStr += Tab +Tab + tagName+".setMouseEnabled("+TouchEnable+");"+NextLine;
+			
+			if(objectData.Scale.ScaleX!=1||objectData.Scale.ScaleY!=1) totalStr += Tab +Tab + tagName+".setScale("+objectData.Scale.ScaleX+","+objectData.Scale.ScaleY+");"+NextLine;
+			if(myAlpha!=1) totalStr += Tab + Tab +tagName+".setAlpha("+myAlpha+");"+NextLine;
+			if(VisibleForFrame!=true)totalStr += Tab + Tab +tagName+".setVisible("+VisibleForFrame+");"+NextLine;
+			if(TouchEnable==false)totalStr += Tab +Tab + tagName+".setMouseEnabled("+TouchEnable+");"+NextLine;
 			
 			//动态添加tag属性
 			totalStr += Tab + Tab +tagName+".name = '"+objectData.Name +"';"+NextLine;
