@@ -9,6 +9,7 @@ package manager
 	import flash.net.dns.SRVRecord;
 	
 	import mx.controls.Alert;
+	import mx.utils.StringUtil;
 
 	public class FileManager
 	{
@@ -26,6 +27,16 @@ package manager
 			
 			var rows:int =sheet.rows;
 			var columns:int =sheet.cols;
+			//获取实际有用的columns 
+			while(StringUtil.trim(sheet.getCell(2,columns-1).value)=="")
+			{
+				columns--;
+				if (columns==0)
+				{
+					break;
+				}
+			}
+			
 			
 			var desCell:Cell; //描述cell
 			var createCell:Cell; //生成在哪一端的cell

@@ -85,10 +85,10 @@ package manager
 
 			totalStr += Tab + "var "+fileName+" = Game."+fileName+" = function()"+NextLine;
 			totalStr += Tab + "{"+NextLine;
-			totalStr += Tab +Tab + "YF2d.BorderContainer.call(this);"+NextLine;
+			totalStr += Tab +Tab + "Game.AbsUIEditorView.call(this);"+NextLine;
 			totalStr += Tab +Tab + "this.init()"+NextLine;
 			totalStr += Tab +"}"+NextLine;
-			totalStr += Tab +"YF2d.extends("+fileName+",YF2d.BorderContainer);"+NextLine;
+			totalStr += Tab +"YF2d.extends("+fileName+",Game.AbsUIEditorView);"+NextLine;
 				
 			totalStr += Tab +fileName+".prototype.init = function()"+NextLine;
 			totalStr += Tab + "{"+NextLine;
@@ -107,10 +107,11 @@ package manager
 			totalStr += Tab + "}"+NextLine;
 			
 			
-			totalStr += Tab +fileName+".prototype.getChildByName = function(name)"+NextLine;
-			totalStr += Tab + "{"+NextLine;
-			totalStr += Tab + Tab +'return this["__"+name] ;'+NextLine;
-			totalStr += Tab + "}"+NextLine;
+			//基类已经实现了该功能
+//			totalStr += Tab +fileName+".prototype.getChildByName = function(name)"+NextLine;
+//			totalStr += Tab + "{"+NextLine;
+//			totalStr += Tab + Tab +'return this["__"+name] ;'+NextLine;
+//			totalStr += Tab + "}"+NextLine;
 			
 			totalStr += NextLine+NextLine;
 			totalStr += "})();";
@@ -191,7 +192,7 @@ package manager
 					totalStr += Tab + Tab +tagName+".setText('"+objectData.LabelText+"');"+NextLine;
 					break;
 				case Type_Panel:
-					totalStr += Tab +Tab + tagName+" = new YF2d.BorderContainer();"+NextLine;
+					totalStr += Tab +Tab + tagName+" = new YFFramework.AbsBorderView();"+NextLine;
 					addChildStr = "addChild";
 					
 					break;
@@ -233,7 +234,7 @@ package manager
 					addChildStr ="addItem"
 					break;
 				default:
-					totalStr += Tab +Tab + tagName+" = new YF2d.BorderContainer();"+NextLine;
+					totalStr += Tab +Tab + tagName+" = new YFFramework.AbsBorderView();"+NextLine;
 					addChildStr = "addChild";
 					break;
 			}
