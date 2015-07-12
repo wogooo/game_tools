@@ -57,7 +57,7 @@ package
 		{  
 			
 			var px:int=-200;
-			var py:int=0;
+			var py:int=-200;
 			var width:int=800;
 			var height:int=800;
 			var len:int=mc.totalFrames;
@@ -160,7 +160,7 @@ package
 		{  
 			
 			var px:int=-200;
-			var py:int=0;
+			var py:int=-200;
 			var width:int=800;
 			var height:int=800;
 			var len:int=mc.totalFrames;
@@ -260,7 +260,7 @@ package
 		public static function converMountSWFToPNGSequence(mc:MovieClip):Vector.<BitmapDataName>
 		{
 			var px:int=-200;
-			var py:int=0;
+			var py:int=-200;
 			var width:int=800;
 			var height:int=800;
 			var len:int=mc.totalFrames;
