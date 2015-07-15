@@ -182,7 +182,7 @@ package manager
 					if( objectData.CColor.G==null)  objectData.CColor.G= 255
 					if( objectData.CColor.B==null)  objectData.CColor.B= 255
 						
-					labelColor ="#"+ Color.rgb(objectData.CColor.R,objectData.CColor.G,objectData.CColor.B).toString(16);
+					labelColor ="#"+ getColorStr(Color.rgb(objectData.CColor.R,objectData.CColor.G,objectData.CColor.B))
 					
 					labelColor = '"'+labelColor+'"';
 					
@@ -215,7 +215,7 @@ package manager
 					if( objectData.CColor.G==null)  objectData.CColor.G= 255
 					if( objectData.CColor.B==null)  objectData.CColor.B= 255
 					
-					labelColor ="#"+ Color.rgb(objectData.CColor.R,objectData.CColor.G,objectData.CColor.B).toString(16);
+					labelColor ="#"+ getColorStr(Color.rgb(objectData.CColor.R,objectData.CColor.G,objectData.CColor.B));
 
 					labelColor = '"'+labelColor+'"';
 					
@@ -265,6 +265,21 @@ package manager
 			totalStr += Tab +Tab +objectDataParent+"."+ parentAddStr+"("+tagName+");"+NextLine;
 			return {tagName:tagName,addChildStr:addChildStr,totalStr:totalStr};
 		}
+		
+		public static function getColorStr(color:uint):String
+		{
+			var str:String = color.toString(16);
+			var len:int = str.length;
+			var difLen :int = 6-len;
+			var lastStr:String ="";
+			for(var i:int = 0;i!=difLen;++i)
+			{
+				lastStr += "0"
+			}
+			lastStr +=str;
+			return lastStr;
+		}
+		
 		
 		//根据类型获取对应的函数名
 //		public static function getClassByType(type:String,sizeObj:Object)
