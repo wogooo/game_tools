@@ -16,7 +16,7 @@ package
 	 */
 	public class ImageChangeManager
 	{
-		private static const Dif:int = 0; //容积差
+		private static const throld:int = 150; //容积差
 		public function ImageChangeManager()
 		{
 		}
@@ -41,15 +41,22 @@ package
 					var currentAlpha :int= 255* (1-r*g*b/(255*255*255));  //去除预乘 aplha
 					
 					var alphaClor :uint = 0x00FFFFFF;
-					if (255-r<=Dif&&255-g<=Dif&&255-b<=Dif)
+					var myColor:uint;
+					if(r==255&&g==255&&b==255)
 					{
-						
 						retBitmapData.setPixel32(i,j,alphaClor);
-						
 					}
+//					if (r>=throld&&g>=throld&&b>=throld) //做预乘处理 
+//					{
+//						
+//						myColor = Color.argb(currentAlpha,r,g,b);
+//						retBitmapData.setPixel32(i,j,myColor);
+//						
+//					}
 					else 
 					{
-						var myColor:uint = Color.argb(currentAlpha,r,g,b);
+						myColor = Color.argb(currentAlpha,r,g,b);
+						retBitmapData.setPixel32(i,j,myColor);
 						retBitmapData.setPixel32(i,j,myColor);
 					}
 				}

@@ -45,7 +45,7 @@ package
 	import utils.ui.treeAssets.TreeBase;
 	import utils.ui.treeAssets.TreeContainer;
 	
-	[SWF(width="1200",height="800")]
+	[SWF(width="800",height="600")]
 	public class ATFMovie extends Sprite
 	{
 		private var _movie:ATFSkillEffect;
