@@ -9,14 +9,14 @@ package
 	import flash.filesystem.File;
 	import flash.utils.ByteArray;
 
-	/** 将黑色背景的 图片改成透明的
+	/** 将黑色背景 /白色背景的 图片改成透明的    算法用到了 alpha   去 预乘alpha      即： alpha =  1-  alpha预乘 
 	 * 
 	 * @author 
 	 * 
 	 */
 	public class ImageChangeManager
 	{
-		private static const Dif:int = 21; //容积差
+		private static const Dif:int = 0; //容积差
 		public function ImageChangeManager()
 		{
 		}
@@ -37,6 +37,9 @@ package
 					var r:int = Color.getRed(color32);
 					var g:int  = Color.getGreen(color32);
 					var b:int  = Color.getBlue(color32);
+					
+					var currentAlpha :int= 255* (1-r*g*b/(255*255*255));  //去除预乘 aplha
+					
 					var alphaClor :uint = 0x00FFFFFF;
 					if (255-r<=Dif&&255-g<=Dif&&255-b<=Dif)
 					{
@@ -46,7 +49,8 @@ package
 					}
 					else 
 					{
-						retBitmapData.setPixel32(i,j,color32);
+						var myColor:uint = Color.argb(currentAlpha,r,g,b);
+						retBitmapData.setPixel32(i,j,myColor);
 					}
 				}
 				
