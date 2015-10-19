@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx" creationComplete="init(event)">
+	<fx:Declarations>
+		<!-- 将非可视元素（例如服务、值对象）放在此处 -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import com.YFFramework.core.net.loader.image_swf.BytesLoader;
+			
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			
+
+			
+			protected function init(event:FlexEvent):void
+			{
+				
+				addEventListener(NativeDragEvent.NATIVE_DRAG_DROP,onDragDrop);
+				addEventListener(NativeDragEvent.NATIVE_DRAG_ENTER,onDragDrop);
+				
+			}
+			
+			
+			
+			private function onDragDrop(e:NativeDragEvent):void
+			{
+				//将拖入的文件以数组形式获得，指定拖入的数据是文件数组形式
+				var files:Array = e.clipboard.getData(ClipboardFormats.FILE_LIST_FORMAT) as Array;
+				//获得拖入的第一个文件
+				var file:File = File(files[0]);
+				switch(e.type) 
+				{				
+					case NativeDragEvent.NATIVE_DRAG_ENTER:  
+						if(file.type==".png"|| file.isDirectory)
+							NativeDragManager.acceptDragDrop(this);
+						break;
+					case NativeDragEvent.NATIVE_DRAG_DROP:
+						
+						if(file.type==".png")
+						{
+							openFileMovie(file,true);
+						}
+						else if ( file.isDirectory)
+						{
+							openFileDir(file);
+							Alert.show("创建完成");
+						}
+						break;
+				}
+			}  
+			
+			private function  openFileDir(file:File):void
+			{
+				var arr:Array = file.getDirectoryListing();
+				var len:int = arr.length;
+				for(var i:int = 0;i!=len;++i)
+				{
+					var childFile :File = arr[i];
+					if(childFile.isDirectory)
+					{
+						openFileDir(childFile);
+					}
+					else 
+					{
+						if(childFile.type==".png" )
+						{
+							openFileMovie(childFile,false);
+						}
+					}
+				}
+			}
+			
+
+			
+
+			private function  openFileMovie(file:File,alert:Boolean):void
+			{
+				var bytes:ByteArray=new ByteArray();
+				var stream:FileStream=new FileStream();
+				stream.open(file,FileMode.READ);
+				stream.readBytes(bytes,0,stream.bytesAvailable);
+				stream.close();
+				bytes.position=0;
+				var loader:BytesLoader = new BytesLoader( );
+				loader.loadCompleteCalback = loadCompleteCalback;
+				loader.load(bytes,new ApplicationDomain());
+				loader.setData({file:file,alert:alert});
+			}
+			
+			private function  loadCompleteCalback(loader:BytesLoader,domain:ApplicationDomain):void
+			{
+				
+				var bitmapData :BitmapData = Bitmap(loader.content).bitmapData;
+				var file:File = loader.getData().file as File;
+				var fileDir :File= file.parent;
+				var name :String = file.name;
+				ImageChangeManager.changeImage(bitmapData,fileDir,name);
+				var alert:Boolean = loader.getData().alert;
+				if (alert)
+				{
+					Alert.show("创建完成");
+				}
+
+				
+			}
+
+			
+			
+			
+		]]>
+	</fx:Script>
+</s:WindowedApplication>

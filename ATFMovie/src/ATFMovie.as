@@ -1,8 +1,6 @@
 package
 {
-	import atfMovie.ATFMovieAnalysse;
-	import atfMovie.ATFSkillEffect;
-	
+	import com.YFFramework.air.FileUtil;
 	import com.YFFramework.core.center.manager.ResizeManager;
 	import com.YFFramework.core.center.update.MovieUpdateManager;
 	import com.YFFramework.core.net.loader.image_swf.IconLoader;
@@ -19,8 +17,6 @@ package
 	import com.YFFramework.core.yf2d.textures.TextureHelper;
 	import com.YFFramework.core.yf2d.textures.sprite2D.SimpleTexture2D;
 	
-	import data.ATFActionData;
-	
 	import flash.desktop.ClipboardFormats;
 	import flash.desktop.NativeApplication;
 	import flash.desktop.NativeDragManager;
@@ -36,6 +32,11 @@ package
 	import flash.filesystem.FileMode;
 	import flash.filesystem.FileStream;
 	import flash.utils.ByteArray;
+	
+	import atfMovie.ATFMovieAnalysse;
+	import atfMovie.ATFSkillEffect;
+	
+	import data.ATFActionData;
 	
 	import util.ActionUtil;
 	
@@ -69,6 +70,11 @@ package
 			addEvent();
 //			var sp:Sprite=new Sprite();
 //			addChild(sp);
+			
+			var file:File = File.desktopDirectory;
+			
+			file = FileUtil.createDirectory("E:\\createMovie");
+			ActionDataCreate.Instance.init(stage.stageWidth,stage.stageHeight,file,this._movie);
 		}
 		
 		private function addEvent():void
@@ -184,6 +190,7 @@ package
 			}
 
 			initPlay(action,direction,true);
+			ActionDataCreate.Instance.start();
 		}
 		
 		protected function initUI():void
@@ -231,13 +238,14 @@ package
 			var texture:Texture=TextureHelper.Instance.getTexture(lowmapData.bitmapData) as Texture;
 			_bg.setFlashTexture(texture);
 			_bg.setXY(w*0.5,h*0.5);
+			_bg.visible = false;
 		}
 				
 		private function initYF2d():void   
 		{
 			StageProxy.Instance.configure(stage);
 			YF2d.Instance.scence.addEventListener(YF2dEvent.CONTEXT_First_CREATE,onContext3dCreate);
-			YF2d.Instance.initData(stage,0x000000);
+			YF2d.Instance.initData(stage,0xFFFFFF);
 			StageProxy.Instance.stage.addEventListener(Event.RESIZE,onResize);
 		}
 		private function onResize(e:Event):void

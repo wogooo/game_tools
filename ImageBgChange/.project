@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>ATFMovie</name>
+	<name>ImageBgChange</name>
 	<comment></comment>
 	<projects>
 	</projects>
@@ -18,13 +18,14 @@
 	</buildSpec>
 	<natures>
 		<nature>com.adobe.flexbuilder.project.apollonature</nature>
+		<nature>com.adobe.flexbuilder.project.flexnature</nature>
 		<nature>com.adobe.flexbuilder.project.actionscriptnature</nature>
 	</natures>
 	<linkedResources>
 		<link>
 			<name>[source path] src</name>
 			<type>2</type>
-			<location>E:/yefeng/as3/duoleGame/YFFrameworkCore/src</location>
+			<locationURI>DOCUMENTS/yf2dGame/src</locationURI>
 		</link>
 	</linkedResources>
 </projectDescription>

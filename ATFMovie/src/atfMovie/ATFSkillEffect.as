@@ -33,6 +33,18 @@ package atfMovie
 		private var _preScaleX:Number;
 		private var _preLoop:Boolean;
 		private var _preLoopTime:int;
+		
+		
+		
+		/**当前播放的 动作
+		 */
+		public var playAction:int =-1;
+		
+		/**当前播放的方向
+		 */
+		public var playDirection:int = -1;
+
+		
 		public function ATFSkillEffect()
 		{
 			mouseChildren=false;
@@ -43,20 +55,20 @@ package atfMovie
 			if(actionData!=data)
 			{
 				actionData=data;
-				if(actionData)
-				{
-					blendMode=actionData.getBlendMode();
-					if(actionData.getSkillRandomRotate()) ///随机旋转的受击技能   需要抬高技能
-					{
-						rotationZ=Math.round(Math.random()*360);
-						//						y=-BgMapScrollport.HeroHeight*0.5;  ///
-						setY(-BgMapScrollport.HeroHeight*0.5);
-					}
-					else 
-					{
-						rotationZ=0;
-					}
-				}
+//				if(actionData)
+//				{
+//					blendMode=actionData.getBlendMode();
+//					if(actionData.getSkillRandomRotate()) ///随机旋转的受击技能   需要抬高技能
+//					{
+//						rotationZ=Math.round(Math.random()*360);
+//						//						y=-BgMapScrollport.HeroHeight*0.5;  ///
+//						setY(-BgMapScrollport.HeroHeight*0.5);
+//					}
+//					else 
+//					{
+//						rotationZ=0;
+//					}
+//				}
 			}
 		}
 		
@@ -149,6 +161,10 @@ package atfMovie
 					movieData=actionData.dataDict[action][direction];
 					if(movieData)
 					{ 
+						
+						playAction = action;
+						playDirection = direction;
+						
 						///设置像素源
 						_movie.setAtlas(movieData.bitmapData);
 						///设置贴图
@@ -242,6 +258,11 @@ package atfMovie
 			_playTween.stop();
 		}
 		
+		public function getPlayTween():TweenATFPlay
+		{
+			return _playTween;
+		}
+
 		/**
 		 * @param index  在 action  direction 的数组中停留在 index 帧上
 		 * @param action

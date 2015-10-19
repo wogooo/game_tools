@@ -179,28 +179,28 @@ package com.YFFramework.air
 		 */
 		public static function createSliceImage(parent:DisplayObjectContainer,dir:File,image:DisplayObject,sliceW:int,sliceH:int,_type:String="jpg",quality:int=80):void 
 		{
-			_parent = parent;
-			var spliteImage:SpliteImage = new SpliteImage();
-			var saveImage:SaveImages = new SaveImages();
-			var imageArr:Array=[]
-			var positions:Array=[];
-			spliteImage.splite(image,sliceW,sliceH);
-			imageArr=spliteImage.smallImages
-			positions=spliteImage.storePosition;
-			spliteImage.release();
-			var fileNames:Vector.<String>=new Vector.<String>();
-			var i:int=0;
-			var len:int=positions.length
-			var myName:String;
-			var obj:Object
-			while(i!=len){
-				obj=positions[i];
-				myName=obj.row+"_"+obj.column;
-				fileNames.push(myName);
-				++i;
-			}
-			saveImage.addEventListener(Event.COMPLETE,OnSaveComplete);
-			saveImage.save(dir,imageArr,fileNames,_type,quality);
+//			_parent = parent;
+//			var spliteImage:SpliteImage = new SpliteImage();
+//			var saveImage:SaveImages = new SaveImages();
+//			var imageArr:Array=[]
+//			var positions:Array=[];
+//			spliteImage.splite(image,sliceW,sliceH);
+//			imageArr=spliteImage.smallImages
+//			positions=spliteImage.storePosition;
+//			spliteImage.release();
+//			var fileNames:Vector.<String>=new Vector.<String>();
+//			var i:int=0;
+//			var len:int=positions.length
+//			var myName:String;
+//			var obj:Object
+//			while(i!=len){
+//				obj=positions[i];
+//				myName=obj.row+"_"+obj.column;
+//				fileNames.push(myName);
+//				++i;
+//			}
+//			saveImage.addEventListener(Event.COMPLETE,OnSaveComplete);
+//			saveImage.save(dir,imageArr,fileNames,_type,quality);
 		}
 		private static function OnSaveComplete(e:Event):void 
 		{
@@ -218,13 +218,13 @@ package com.YFFramework.air
 		
 		public static function createLowQualityImage(parent:DisplayObjectContainer,dir:File, image:DisplayObject,_name:String="低像素图片", _quality:int = 20):void 
 		{
-			_parent = parent;
-			var saveImages:SaveImages = new SaveImages();
-			var arr:Array = [image];
-			var fileNames:Vector.<String> = new Vector.<String>()
-			fileNames.push(_name);
-			saveImages.addEventListener(Event.COMPLETE,onLowQualityImage);
-			saveImages.save(dir,arr,fileNames,"jpg",_quality);
+//			_parent = parent;
+//			var saveImages:SaveImages = new SaveImages();
+//			var arr:Array = [image];
+//			var fileNames:Vector.<String> = new Vector.<String>()
+//			fileNames.push(_name);
+//			saveImages.addEventListener(Event.COMPLETE,onLowQualityImage);
+//			saveImages.save(dir,arr,fileNames,"jpg",_quality);
 		}
 		private static function onLowQualityImage(e:Event):void 
 		{
