@@ -212,7 +212,7 @@ package
 			_movie=new ATFSkillEffect();
 			_movie.start();
 			YF2d.Instance.scence.addChild(_movie);
-			_movie.setXY(450,350);
+			_movie.setXY(400,416);
 			
 		} 
 		private function initBg():void
