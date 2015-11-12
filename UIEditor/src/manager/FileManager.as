@@ -159,7 +159,24 @@ package manager
 			{
 				case Type_Image:
 				case Type_Sprite:
-					totalStr += Tab +Tab + tagName+" = new YFFramework.YFImage();"+NextLine;
+					if (objectData.Scale9Enable==null) //不允许9宫格
+					{
+						totalStr += Tab +Tab + tagName+" = new YFFramework.YFImage();"+NextLine;
+					}
+					else 
+					{
+						if(objectData.Scale9Enable) //允许 9宫格
+						{
+							
+							totalStr += Tab +Tab + tagName+" = new YFFramework.YFImage(true);"+NextLine;
+						}
+						else //不允许9宫格
+						{
+							totalStr += Tab +Tab + tagName+" = new YFFramework.YFImage();"+NextLine;
+						}
+						
+					}
+					
 					addChildStr = "addChild";
 					//只读取正常状态的图片
 					var imagePath:String = objectData.FileData.Path;
