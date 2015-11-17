@@ -1065,7 +1065,7 @@
 				if(uv_jsonBox.selected)  //最小尺寸的png 
 				{
 					minRect=BitmapDataUtil.getMinRect(bmpData);
-					bitmapData=new BitmapData(minRect.width+1,minRect.height+1,true,0xFFFFFF);
+					bitmapData=new BitmapData(minRect.width+10,minRect.height+10,true,0xFFFFFF);//扩展10个像素
 					bitmapData.draw(BitmapData(bmpData),mat);
 					pngBytes=coder.encode(bitmapData);
 				}
