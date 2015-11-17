@@ -1035,8 +1035,8 @@
 				var actionContainer:ActionContainer = new ActionContainer();
 				_uvContainer.addElement(actionContainer);
 				var jsonData:Object=GpuFileGenerator.createJsonHeadForJS(actionData);//数据头
-				PositionUtil.positionActionDataAuto3(jsonData,actionData,actionContainer);//获取完整数据
-				var time:TimeOut=new TimeOut(2000,saveForJsonUV_toJS,{actionContainer:actionContainer,jsonData:jsonData});//所有的方向动作合成一张图片
+				var sizeObj:Object = PositionUtil.positionActionDataAuto3(jsonData,actionData,actionContainer);//获取完整数据
+				var time:TimeOut=new TimeOut(2000,saveForJsonUV_toJS,{actionContainer:actionContainer,jsonData:jsonData,sizeObj:sizeObj});//所有的方向动作合成一张图片
 				time.start();
 			}
 			
@@ -1048,6 +1048,7 @@
 				fillActionDataInfo();
 				var actionContainer:ActionContainer = obj.actionContainer as ActionContainer;
 				var jsonData:Object = obj.jsonData;
+				var sizeObj:Object = obj.sizeObj; //图片最小尺寸
 				var bitmapDataArr:Array=[];  
 				///填充数据
 				var fileName:String=openFileName;
@@ -1059,13 +1060,13 @@
 				var imageLen:int;
 				var pngBytes:ByteArray;
 				var bitmapData:BitmapData;
-				var minRect:Rectangle;
+//				var minRect:Rectangle;
  				var bmpData :BitmapData = actionContainer.getPic(); 
 				var mat:Matrix=new Matrix(); 
 				if(uv_jsonBox.selected)  //最小尺寸的png 
 				{
-					minRect=BitmapDataUtil.getMinRect(bmpData);
-					bitmapData=new BitmapData(minRect.width+10,minRect.height+10,true,0xFFFFFF);//扩展10个像素
+//					minRect=BitmapDataUtil.getMinRect(bmpData);
+					bitmapData=new BitmapData(sizeObj.width,sizeObj.height,true,0xFFFFFF);//扩展10个像素
 					bitmapData.draw(BitmapData(bmpData),mat);
 					pngBytes=coder.encode(bitmapData);
 				}

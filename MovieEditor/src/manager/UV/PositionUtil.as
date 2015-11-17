@@ -19,9 +19,11 @@ package manager.UV
 		}
 		
 		/** 自动展UI   所有动作方向展到1 张图片上  用于js 
+		 * 返回的是 图片的最小尺寸宽高
 		 */
-		public static function positionActionDataAuto3(headerObj:Object,actionData:ActionData,container:ActionContainer):void
+		public static function positionActionDataAuto3(headerObj:Object,actionData:ActionData,container:ActionContainer):Object
 		{
+			var color:uint = 0xFFFF00;
 			var preW:int=2048;
 			var preH:int=2048;
 			var notMuch:Boolean=false;
@@ -48,11 +50,13 @@ package manager.UV
 			}
 			preW=preW*2;
 			if(preW>2048)preW=2048;
-			positionActionData4(headerObj,actionData,container,preW,preH)
+			var sizeObj:Object={};
+			positionActionData4(headerObj,actionData,container,preW,preH,color,sizeObj);
+			return sizeObj;
 		}
 		
 		//最小放置图片,所有动作方向展到1张图片上  js 引擎用到
-		private static function positionActionData4(headerObj:Object,actionData:ActionData,container:ActionContainer,sizeW:int=2048,sizeH:int=2048,color:uint=0xFFFF00):Boolean
+		private static function positionActionData4(headerObj:Object,actionData:ActionData,container:ActionContainer,sizeW:int=2048,sizeH:int=2048,color:uint=0xFFFF00,sizeObj:Object = null):Boolean
 		{
 			container.removeAllContent();
 			container.drawBg(color,sizeW,sizeH);
@@ -102,7 +106,7 @@ package manager.UV
 			
 			//对arr数组进行  排序  
 			vect = vect.sort(sortFunc);
-			return postionData(vect,container,sizeW,sizeH);
+			return postionData(vect,container,sizeW,sizeH,sizeObj);
 			
 		}
 		
@@ -182,7 +186,7 @@ package manager.UV
 			return currentRect;
 		}
 		//智能 高级展UV,最小展UV  一个动作一个方向 1张图片
-		private static function postionData(vect:Vector.<ImageEx>,container:ActionContainer,sizeW:int=2048,sizeH:int=2048):Boolean
+		private static function postionData(vect:Vector.<ImageEx>,container:ActionContainer,sizeW:int=2048,sizeH:int=2048,maxSizeObj:Object = null):Boolean
 		{
 			var space:int=2;
 			var lastX:int=space,minY:int=space;
@@ -213,6 +217,22 @@ package manager.UV
 				rectArr.push(rect);
 				image.atlas.imageData.atlasX=image.x;
 				image.atlas.imageData.atlasY=image.y;
+				
+				if (maxSizeObj)  //获取放置后 图片的最小 像素宽高
+				{
+					var testW:int = image.atlas.imageData.atlasX + rect.width;
+					var testH:int = image.atlas.imageData.atlasY + rect.height;
+					if (maxSizeObj.width==null)
+					{
+						maxSizeObj.width = testW;
+						maxSizeObj.height = testH;
+					}
+					else 
+					{
+						maxSizeObj.width = maxSizeObj.width>testW? 	maxSizeObj.width:testW;
+						maxSizeObj.height = maxSizeObj.height>testH? 	maxSizeObj.height:testH;
+					}
+				}
 			}
 			return notMuch;
 		}
